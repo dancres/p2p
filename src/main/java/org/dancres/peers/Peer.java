@@ -1,6 +1,10 @@
 package org.dancres.peers;
 
+import org.jboss.netty.handler.codec.http.HttpRequest;
+import org.jboss.netty.handler.codec.http.HttpResponse;
+
 import java.net.URI;
+import java.util.Timer;
 
 public interface Peer {
     /**
@@ -17,6 +21,14 @@ public interface Peer {
      */
     public void add(String aService, ServiceDispatcher aDispatcher);
 
+    public Timer getTimer();
+
     public interface ServiceDispatcher {
+        /**
+         * @param aServicePath is the path used to invoke the service (everything after the peer address)
+         * @param aRequest is the request information associated with the invocation
+         * @param aResponse is the response that will be given to the invocation
+         */
+        void dispatch(String aServicePath, HttpRequest aRequest, HttpResponse aResponse);
     }
 }
