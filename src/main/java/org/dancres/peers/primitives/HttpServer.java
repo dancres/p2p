@@ -1,6 +1,7 @@
 package org.dancres.peers.primitives;
 
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -37,12 +38,19 @@ public class HttpServer {
             Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
 
     private final InetSocketAddress _bindAddress;
+    private final URI _baseAddress;
+
     private final Channel _channel;
     private final Map<String, Handler> _handlers = new ConcurrentHashMap<String, Handler>();
 
-    public HttpServer(InetSocketAddress aBindPoint) throws InterruptedException {
+    public HttpServer(InetSocketAddress aBindPoint) throws Exception {
         _bindAddress = aBindPoint;
         _channel = init();
+        _baseAddress = new URI("http://" + _bindAddress.getHostName() + ":" + _bindAddress.getPort());
+    }
+
+    public URI getBase() throws Exception {
+        return _baseAddress;
     }
 
     private ChannelPipeline commsStack(ChannelPipeline aPipeline) {
