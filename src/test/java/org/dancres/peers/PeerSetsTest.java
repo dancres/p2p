@@ -4,33 +4,33 @@ import junit.framework.Assert;
 import org.dancres.peers.primitives.StaticPeerSet;
 import org.junit.Test;
 
-import java.net.InetSocketAddress;
+import java.net.URI;
 import java.util.HashSet;
 import java.util.Set;
 
 public class PeerSetsTest {
     @Test
-    public void testStatic() {
-        Set<InetSocketAddress> mySingle = new HashSet<InetSocketAddress>();
-        mySingle.add(InetSocketAddress.createUnresolved("localhost", 8080));
+    public void testStatic() throws Exception {
+        Set<URI> mySingle = new HashSet<URI>();
+        mySingle.add(new URI("http://localhost:8080"));
 
-        Set<InetSocketAddress> myDouble = new HashSet<InetSocketAddress>();
-        myDouble.add(InetSocketAddress.createUnresolved("localhost", 8080));
-        myDouble.add(InetSocketAddress.createUnresolved("localhost", 8081));
+        Set<URI> myDouble = new HashSet<URI>();
+        myDouble.add(new URI("http://localhost:8080"));
+        myDouble.add(new URI("http://localhost:8081"));
 
         StaticPeerSet mySet = new StaticPeerSet(mySingle);
 
         Assert.assertEquals(1, mySet.getPeers().size());
-        Assert.assertNull(PeerSets.randomSelect(mySet, InetSocketAddress.createUnresolved("localhost", 8080)));
+        Assert.assertNull(PeerSets.randomSelect(mySet, new URI("http://localhost:8080")));
 
         mySet = new StaticPeerSet(myDouble);
 
         Assert.assertEquals(2, mySet.getPeers().size());
 
-        InetSocketAddress myChosen =
-                PeerSets.randomSelect(mySet, InetSocketAddress.createUnresolved("localhost", 8080));
+        URI myChosen =
+                PeerSets.randomSelect(mySet, new URI("http://localhost:8080"));
 
         Assert.assertNotNull(myChosen);
-        Assert.assertNotSame(InetSocketAddress.createUnresolved("localhost", 8080), myChosen);
+        Assert.assertNotSame(new URI("http://localhost:8080"), myChosen);
     }
 }

@@ -2,11 +2,13 @@ package org.dancres.peers.primitives;
 
 import org.dancres.peers.Peer;
 
+import java.net.URI;
+
 /**
  * SingleProcessPeer is a single-process peer (e.g. it's a standalone webserver that runs on a particular address).
  */
 public class SingleProcessPeer implements Peer {
-    public String getAddress() {
+    public URI getAddress() {
         return null;  //To change body of implemented methods use File | Settings | File Templates.
     }
 

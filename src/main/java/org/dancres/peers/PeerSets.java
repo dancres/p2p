@@ -1,6 +1,6 @@
 package org.dancres.peers;
 
-import java.net.InetSocketAddress;
+import java.net.URI;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
@@ -9,11 +9,11 @@ import java.util.Set;
 public class PeerSets {
     private static final Random _rng = new Random();
 
-    public static InetSocketAddress randomSelect(PeerSet aSet, InetSocketAddress aLocal) {
-        Set<InetSocketAddress> myBase = aSet.getPeers();
+    public static URI randomSelect(PeerSet aSet, URI aLocal) {
+        Set<URI> myBase = aSet.getPeers();
         myBase.remove(aLocal);
 
-        List<InetSocketAddress> myPeers = new LinkedList<InetSocketAddress>();
+        List<URI> myPeers = new LinkedList<URI>();
         myPeers.addAll(myBase);
 
         if (myPeers.size() > 0) {

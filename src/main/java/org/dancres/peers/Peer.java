@@ -1,10 +1,12 @@
 package org.dancres.peers;
 
+import java.net.URI;
+
 public interface Peer {
     /**
      * @return the URI at which this peer is rooted
      */
-    public String getAddress();
+    public URI getAddress();
 
     /**
      * Add a service to this peer

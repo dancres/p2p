@@ -2,23 +2,23 @@ package org.dancres.peers.primitives;
 
 import org.dancres.peers.PeerSet;
 
-import java.net.InetSocketAddress;
+import java.net.URI;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
 public class StaticPeerSet implements PeerSet {
-    private final Set<InetSocketAddress> _peerSet;
+    private final Set<URI> _peerSet;
 
-    public StaticPeerSet(Set<InetSocketAddress> aSet) {
-        Set<InetSocketAddress> mySet = new HashSet<InetSocketAddress>();
+    public StaticPeerSet(Set<URI> aSet) {
+        Set<URI> mySet = new HashSet<URI>();
         mySet.addAll(aSet);
 
         _peerSet = Collections.unmodifiableSet(mySet);
     }
 
-    public Set<InetSocketAddress> getPeers() {
-        Set<InetSocketAddress> myClone = new HashSet<InetSocketAddress>();
+    public Set<URI> getPeers() {
+        Set<URI> myClone = new HashSet<URI>();
         myClone.addAll(_peerSet);
 
         return myClone;

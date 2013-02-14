@@ -1,8 +1,8 @@
 package org.dancres.peers;
 
-import java.net.InetSocketAddress;
+import java.net.URI;
 import java.util.Set;
 
 public interface PeerSet {
-    public Set<InetSocketAddress> getPeers();
+    public Set<URI> getPeers();
 }
