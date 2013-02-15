@@ -16,7 +16,7 @@ import java.util.Timer;
 public class DirTest {
     @Test
     public void runIt() throws Exception {
-        HttpServer myServer = new HttpServer(new InetSocketAddress("localhost", 12345));
+        HttpServer myServer = new HttpServer(new InetSocketAddress("localhost", 8081));
         AsyncHttpClient myClient = new AsyncHttpClient();
 
         Peer myPeer1 = new InProcessPeer(myServer, myClient, "/peer1", new Timer());
