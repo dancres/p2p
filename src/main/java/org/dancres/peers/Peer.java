@@ -1,5 +1,6 @@
 package org.dancres.peers;
 
+import com.ning.http.client.AsyncHttpClient;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpResponse;
 
@@ -23,6 +24,8 @@ public interface Peer {
     public void add(String aService, ServiceDispatcher aDispatcher);
 
     public Timer getTimer();
+
+    public AsyncHttpClient getClient();
 
     public interface ServiceDispatcher {
         /**

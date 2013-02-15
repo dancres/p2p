@@ -1,5 +1,6 @@
 package org.dancres.peers.primitives;
 
+import com.ning.http.client.AsyncHttpClient;
 import org.dancres.peers.Peer;
 
 import java.net.URI;
@@ -13,11 +14,15 @@ public class SingleProcessPeer implements Peer {
         return null;
     }
 
+    public AsyncHttpClient getClient() {
+        throw new UnsupportedOperationException();
+    }
+
     public URI getAddress() {
-        return null;  //To change body of implemented methods use File | Settings | File Templates.
+        throw new UnsupportedOperationException();
     }
 
     public void add(String aService, ServiceDispatcher aDispatcher) {
-        //To change body of implemented methods use File | Settings | File Templates.
+        throw new UnsupportedOperationException();
     }
 }

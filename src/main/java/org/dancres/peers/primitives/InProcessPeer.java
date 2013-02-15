@@ -1,5 +1,6 @@
 package org.dancres.peers.primitives;
 
+import com.ning.http.client.AsyncHttpClient;
 import org.dancres.peers.Peer;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpResponse;
@@ -15,6 +16,7 @@ import java.util.concurrent.ConcurrentMap;
  * webserver with a common URL base space and mapping to some subspace underneath the base).
  */
 public class InProcessPeer implements Peer {
+    private final AsyncHttpClient _client;
     private final HttpServer _server;
     private final Timer _timer;
     private final ConcurrentMap<String, ServiceDispatcher> _dispatchers =
@@ -25,8 +27,10 @@ public class InProcessPeer implements Peer {
      * @param aServer is the HttpServer to share in
      * @param aPeerAddress is the sub-space to occupy under the HttpServer's base URL - starting with a "/"
      */
-    public InProcessPeer(HttpServer aServer, final String aPeerAddress, Timer aTimer) throws Exception {
+    public InProcessPeer(HttpServer aServer, AsyncHttpClient aClient,
+                         final String aPeerAddress, Timer aTimer) throws Exception {
         _server = aServer;
+        _client = aClient;
         _timer = aTimer;
         _fullAddress = new URI(_server.getBase().toString() + aPeerAddress);
 
@@ -53,7 +57,18 @@ public class InProcessPeer implements Peer {
         return _fullAddress;
     }
 
+    public AsyncHttpClient getClient() {
+        return _client;
+    }
+
+    /**
+     * @param aService is the address of the service beginning with a "/" which can be accessed relative to the URI
+     *                 from <code>getAddress()</code>
+     *
+     * @param aDispatcher is the dispatcher that will handle requests for this service.
+     */
     public void add(String aService, ServiceDispatcher aDispatcher) {
-        //To change body of implemented methods use File | Settings | File Templates.
+        if (_dispatchers.putIfAbsent(aService, aDispatcher) != null)
+            throw new IllegalStateException("Already got a dispatcher rooted at: " + aService);
     }
 }
