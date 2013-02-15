@@ -62,6 +62,18 @@ public class Directory {
             return _version;
         }
 
+        public boolean equals(Object anObject) {
+            if (anObject instanceof Entry) {
+                Entry myOther = (Entry) anObject;
+
+                return ((_peerName.equals(myOther.getPeerName())) &&
+                        (_version == (myOther.getVersion())) &&
+                        (_timestamp == myOther.getTimestamp()));
+            }
+
+            return false;
+        }
+
         public String toString() {
             return "Directory.Entry: " + _peerName + " version: " + _version + " tstamp: " + _timestamp +
                     " attributes:" + _attributes;
