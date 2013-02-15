@@ -133,9 +133,34 @@ public class Directory {
         return Collections.unmodifiableMap(myEntries);
     }
 
-    /**
-     * @todo Do merge of directories
-     */
+    private void merge(Map<String, Entry> aRemoteDirectory) {
+        for (Map.Entry<String, Directory.Entry> kv : aRemoteDirectory.entrySet()) {
+
+            // Ignore my own directory
+            //
+            if (! kv.getKey().equals(_peer.getAddress().toString() + "/directory")) {
+                boolean mySuccess = false;
+
+                do {
+                    Entry myCurrent = _directory.get(kv.getKey());
+
+                    if (myCurrent == null) {
+
+                        mySuccess = (_directory.putIfAbsent(kv.getKey(), kv.getValue()) == null);
+
+                    } else if ((myCurrent.getVersion() <= kv.getValue().getVersion()) &&
+                            (myCurrent.getTimestamp() <= kv.getValue().getTimestamp())) {
+
+                        mySuccess = _directory.replace(kv.getKey(), myCurrent, kv.getValue());
+
+                    } else {
+                        break;
+                    }
+                } while (mySuccess != true);
+            }
+        }
+    }
+
     class Dispatcher implements Peer.ServiceDispatcher {
         public void dispatch(String aServicePath, HttpRequest aRequest, HttpResponse aResponse) {
             if (aRequest.getMethod().equals(HttpMethod.POST)) {
@@ -151,7 +176,7 @@ public class Directory {
 
                 _logger.debug("Unpacked: " + myRemoteDir);
 
-                _logger.warn("*** Haven't implemented directory merge yet ***");
+                merge(myRemoteDir);
 
                 aResponse.setContent(ChannelBuffers.copiedBuffer(myGson.toJson(myDirectorySnapshot),
                         CharsetUtil.UTF_8));
@@ -182,6 +207,8 @@ public class Directory {
                             Map<String, Entry> myRemoteDir = myGson.fromJson(myResponseDir, myMapType);
 
                             _logger.debug("Unpacked: " + myRemoteDir);
+
+                            merge(myRemoteDir);
 
                         } catch (Exception anE) {
                             _logger.error("Error in unpack", anE);

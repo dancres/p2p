@@ -1,6 +1,7 @@
 package org.dancres.peers;
 
 import com.ning.http.client.AsyncHttpClient;
+import junit.framework.Assert;
 import org.dancres.peers.primitives.HttpServer;
 import org.dancres.peers.primitives.InProcessPeer;
 import org.dancres.peers.primitives.StaticPeerSet;
@@ -33,5 +34,13 @@ public class DirTest {
         myPeer1Dir.start();
 
         Thread.sleep(1000);
+
+        Assert.assertEquals(2, myPeer1Dir.getDirectory().size());
+        Assert.assertEquals(2, myPeer2Dir.getDirectory().size());
+
+        Assert.assertTrue(myPeer1Dir.getDirectory().containsKey(myPeer1.getAddress().toString()));
+        Assert.assertTrue(myPeer1Dir.getDirectory().containsKey(myPeer2.getAddress().toString()));
+        Assert.assertTrue(myPeer2Dir.getDirectory().containsKey(myPeer1.getAddress().toString()));
+        Assert.assertTrue(myPeer2Dir.getDirectory().containsKey(myPeer2.getAddress().toString()));
     }
 }
