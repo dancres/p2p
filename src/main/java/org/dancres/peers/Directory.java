@@ -80,8 +80,7 @@ public class Directory {
         }
     }
 
-    private final AtomicReference<Map<String, Entry>> _directory =
-            new AtomicReference<Map<String, Entry>>(new HashMap<String, Entry>());
+    private final ConcurrentMap<String, Entry> _directory = new ConcurrentHashMap<String, Entry>();
 
     /**
      * @param aPeer is the peer this directory service will run on and represent
@@ -123,7 +122,7 @@ public class Directory {
      * @return the directory of known peers
      */
     public Map<String, Entry> getDirectory() {
-        HashMap<String, Entry> myEntries = new HashMap<String, Entry>(_directory.get());
+        HashMap<String, Entry> myEntries = new HashMap<String, Entry>(_directory);
 
         myEntries.put(_peer.getAddress().toString(),
                 new Entry(_peer.getAddress().toString(),
@@ -140,6 +139,8 @@ public class Directory {
     class Dispatcher implements Peer.ServiceDispatcher {
         public void dispatch(String aServicePath, HttpRequest aRequest, HttpResponse aResponse) {
             if (aRequest.getMethod().equals(HttpMethod.POST)) {
+
+                Map<String, Entry> myDirectorySnapshot = getDirectory();
                 String myJsonRemoteDir = aRequest.getContent().toString(CharsetUtil.UTF_8);
 
                 _logger.debug("Received a directory " + myJsonRemoteDir);
@@ -152,7 +153,8 @@ public class Directory {
 
                 _logger.warn("*** Haven't implemented directory merge yet ***");
 
-                aResponse.setContent(ChannelBuffers.copiedBuffer(myGson.toJson(getDirectory()), CharsetUtil.UTF_8));
+                aResponse.setContent(ChannelBuffers.copiedBuffer(myGson.toJson(myDirectorySnapshot),
+                        CharsetUtil.UTF_8));
                 aResponse.setStatus(HttpResponseStatus.OK);
             } else {
                 aResponse.setStatus(HttpResponseStatus.BAD_REQUEST);
