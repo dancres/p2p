@@ -50,6 +50,10 @@ public class Directory {
             return _peerName;
         }
 
+        public long getTimestamp() {
+            return _timestamp;
+        }
+
         public Map<String, String> getAttributes() {
             return _attributes;
         }
