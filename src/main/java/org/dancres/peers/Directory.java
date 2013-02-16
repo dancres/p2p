@@ -38,18 +38,21 @@ public class Directory {
     private final Peer.ServiceDispatcher _dispatcher;
     private final ConcurrentMap<String, String> _attributes = new ConcurrentHashMap<String, String>();
     private final AtomicLong _version = new AtomicLong(0);
+    private final long _birthTime = System.currentTimeMillis();
 
-    public class Entry {
+    public static class Entry {
         private final String _peerName;
         private final Map<String, String> _attributes;
         private final long _version;
+        private final long _born;
         private final long _timestamp;
 
-        Entry(String aName, Map<String, String> anAttrs, long aVersion, long aTimestamp) {
+        Entry(String aName, Map<String, String> anAttrs, long aVersion, long aTimestamp, long aBorn) {
             _peerName = aName;
             _attributes = anAttrs;
             _version = aVersion;
             _timestamp = aTimestamp;
+            _born = aBorn;
         }
 
         public String getPeerName() {
@@ -68,6 +71,10 @@ public class Directory {
             return _version;
         }
 
+        public long getBorn() {
+            return _born;
+        }
+
         public boolean equals(Object anObject) {
             if (anObject instanceof Entry) {
                 Entry myOther = (Entry) anObject;
@@ -81,7 +88,8 @@ public class Directory {
         }
 
         public String toString() {
-            return "Directory.Entry: " + _peerName + " version: " + _version + " tstamp: " + _timestamp +
+            return "Directory.Entry: " + _peerName + " version: " + _version +
+                    " born: " + _born + " tstamp: " + _timestamp +
                     " attributes:" + _attributes;
         }
     }

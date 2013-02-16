@@ -31,6 +31,10 @@ public class DirTest {
         Directory myPeer1Dir = new Directory(myPeer1, myPeerSet);
         Directory myPeer2Dir = new Directory(myPeer2, myPeerSet);
 
+        // We want some skew between birth time of directory and gossip time to test timestamp/liveness
+        //
+        Thread.sleep(1000);
+
         myPeer1Dir.start();
 
         Thread.sleep(1000);
@@ -40,7 +44,16 @@ public class DirTest {
 
         Assert.assertTrue(myPeer1Dir.getDirectory().containsKey(myPeer1.getAddress().toString()));
         Assert.assertTrue(myPeer1Dir.getDirectory().containsKey(myPeer2.getAddress().toString()));
+
         Assert.assertTrue(myPeer2Dir.getDirectory().containsKey(myPeer1.getAddress().toString()));
         Assert.assertTrue(myPeer2Dir.getDirectory().containsKey(myPeer2.getAddress().toString()));
+
+        Directory.Entry myPeer1Entry = myPeer1Dir.getDirectory().get(myPeer1.getAddress().toString());
+
+        Assert.assertNotSame(myPeer1Entry.getBorn(), myPeer1Entry.getTimestamp());
+
+        Directory.Entry myPeer2Entry = myPeer2Dir.getDirectory().get(myPeer2.getAddress().toString());
+
+        Assert.assertNotSame(myPeer2Entry.getBorn(), myPeer2Entry.getTimestamp());
     }
 }
