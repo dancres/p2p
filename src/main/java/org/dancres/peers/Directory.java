@@ -16,12 +16,11 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.TimerTask;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -36,9 +35,9 @@ public class Directory {
     private final PeerSet _peers;
     private final Peer _peer;
     private final Peer.ServiceDispatcher _dispatcher;
-    private final ConcurrentMap<String, String> _attributes = new ConcurrentHashMap<String, String>();
     private final AtomicLong _version = new AtomicLong(0);
     private final long _birthTime = System.currentTimeMillis();
+    private final List<AttributeProducer> _producers = new CopyOnWriteArrayList<AttributeProducer>();
 
     public static class Entry {
         private final String _peerName;
@@ -118,18 +117,13 @@ public class Directory {
      * @return the attributes associated with this peer
      */
     public Map<String, String> getAttributes() {
-        return Collections.unmodifiableMap(_attributes);
-    }
+        HashMap<String, String> myAttrs = new HashMap<String, String>();
 
-    /**
-     * Set the value of an attribute for this peer
-     *
-     * @param aKey is the name of the attribute
-     * @param aValue is the value of the attribute
-     */
-    public void setAttribute(String aKey, String aValue) {
-        _attributes.put(aKey, aValue);
-        _version.incrementAndGet();
+        for (AttributeProducer ap : _producers) {
+            myAttrs.putAll(ap.produce());
+        }
+
+        return myAttrs;
     }
 
     /**
@@ -140,12 +134,16 @@ public class Directory {
 
         myEntries.put(_peer.getAddress().toString(),
                 new Entry(_peer.getAddress().toString(),
-                        new HashMap<String, String>(_attributes),
+                        getAttributes(),
                         _version.get(),
                         System.currentTimeMillis(),
                         _birthTime));
 
         return myEntries;
+    }
+
+    public void add(AttributeProducer aProducer) {
+        _producers.add(aProducer);
     }
 
     private void merge(Map<String, Entry> aRemoteDirectory) {
@@ -237,4 +235,9 @@ public class Directory {
             }
         }
     }
+
+    public interface AttributeProducer {
+        Map<String, String> produce();
+    }
+
 }

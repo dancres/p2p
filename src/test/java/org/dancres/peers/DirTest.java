@@ -9,13 +9,11 @@ import org.junit.Test;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.Timer;
+import java.util.*;
 
 public class DirTest {
     @Test
-    public void runIt() throws Exception {
+    public void testGossip() throws Exception {
         HttpServer myServer = new HttpServer(new InetSocketAddress("localhost", 8081));
         AsyncHttpClient myClient = new AsyncHttpClient();
 
@@ -55,5 +53,35 @@ public class DirTest {
         Directory.Entry myPeer2Entry = myPeer2Dir.getDirectory().get(myPeer2.getAddress().toString());
 
         Assert.assertNotSame(myPeer2Entry.getBorn(), myPeer2Entry.getTimestamp());
+    }
+
+    @Test
+    public void testAttributes() throws Exception {
+        HttpServer myServer = new HttpServer(new InetSocketAddress("localhost", 8082));
+        AsyncHttpClient myClient = new AsyncHttpClient();
+
+        Peer myPeer1 = new InProcessPeer(myServer, myClient, "/peer1", new Timer());
+
+        Set<URI> myPeers = new HashSet<URI>();
+        myPeers.add(myPeer1.getAddress());
+
+        PeerSet myPeerSet = new StaticPeerSet(myPeers);
+
+        Directory myPeer1Dir = new Directory(myPeer1, myPeerSet);
+
+        myPeer1Dir.add(new Directory.AttributeProducer() {
+            public Map<String, String> produce() {
+                Map<String, String> myAttrs = new HashMap<String, String>();
+
+                myAttrs.put("testAttr", "testValue");
+                return myAttrs;
+            }
+        });
+
+        Map<String, String> myAttrs = myPeer1Dir.getAttributes();
+
+        Assert.assertNotNull(myAttrs);
+        Assert.assertNotNull(myAttrs.get("testAttr"));
+        Assert.assertEquals("testValue", myAttrs.get("testAttr"));
     }
 }
