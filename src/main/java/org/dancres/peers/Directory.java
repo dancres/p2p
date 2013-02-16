@@ -133,7 +133,7 @@ public class Directory {
     }
 
     /**
-     * @return the directory of known peers
+     * @return a directory of known peers
      */
     public Map<String, Entry> getDirectory() {
         HashMap<String, Entry> myEntries = new HashMap<String, Entry>(_directory);
@@ -142,9 +142,10 @@ public class Directory {
                 new Entry(_peer.getAddress().toString(),
                         new HashMap<String, String>(_attributes),
                         _version.get(),
-                        System.currentTimeMillis()));
+                        System.currentTimeMillis(),
+                        _birthTime));
 
-        return Collections.unmodifiableMap(myEntries);
+        return myEntries;
     }
 
     private void merge(Map<String, Entry> aRemoteDirectory) {
