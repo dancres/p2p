@@ -19,7 +19,6 @@ import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Directory service that lives atop a set of peers. The set of peers are used to maintain the directory via gossip.
