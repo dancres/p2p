@@ -111,7 +111,7 @@ public class Directory {
      * Ask the directory service to commence publishing of local peer details and collection of data about other peers.
      */
     public void start() {
-        _peer.getTimer().schedule(new GossipTask(), 0, 30000);
+        _peer.getTimer().schedule(new GossipTask(), 0, 5000);
     }
 
     /**
