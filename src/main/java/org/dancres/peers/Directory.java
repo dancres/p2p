@@ -28,28 +28,25 @@ import java.util.concurrent.atomic.AtomicLong;
  * There may be many more peers that are part of the directory service though not used to track/maintain it directly.
  *
  * A directory service tracks information across all known peers. The information provided is entirely user-defined
- * via attributes. Versioning of entries is done automatically and liveness tests are also supported via timestamps.
+ * via attributes. Liveness tests are supported via timestamps, versioning of attributes is encouraged.
  */
 public class Directory {
     private static final Logger _logger = LoggerFactory.getLogger(Directory.class);
     private final PeerSet _peers;
     private final Peer _peer;
     private final Peer.ServiceDispatcher _dispatcher;
-    private final AtomicLong _version = new AtomicLong(0);
     private final long _birthTime = System.currentTimeMillis();
     private final List<AttributeProducer> _producers = new CopyOnWriteArrayList<AttributeProducer>();
 
     public static class Entry {
         private final String _peerName;
         private final Map<String, String> _attributes;
-        private final long _version;
         private final long _born;
         private final long _timestamp;
 
-        Entry(String aName, Map<String, String> anAttrs, long aVersion, long aTimestamp, long aBorn) {
+        Entry(String aName, Map<String, String> anAttrs, long aTimestamp, long aBorn) {
             _peerName = aName;
             _attributes = anAttrs;
-            _version = aVersion;
             _timestamp = aTimestamp;
             _born = aBorn;
         }
@@ -66,10 +63,6 @@ public class Directory {
             return _attributes;
         }
 
-        public long getVersion() {
-            return _version;
-        }
-
         public long getBorn() {
             return _born;
         }
@@ -79,7 +72,6 @@ public class Directory {
                 Entry myOther = (Entry) anObject;
 
                 return ((_peerName.equals(myOther.getPeerName())) &&
-                        (_version == (myOther.getVersion())) &&
                         (_timestamp == myOther.getTimestamp()));
             }
 
@@ -87,7 +79,7 @@ public class Directory {
         }
 
         public String toString() {
-            return "Directory.Entry: " + _peerName + " version: " + _version +
+            return "Directory.Entry: " + _peerName +
                     " born: " + _born + " tstamp: " + _timestamp +
                     " attributes:" + _attributes;
         }
@@ -135,7 +127,6 @@ public class Directory {
         myEntries.put(_peer.getAddress().toString(),
                 new Entry(_peer.getAddress().toString(),
                         getAttributes(),
-                        _version.get(),
                         System.currentTimeMillis(),
                         _birthTime));
 
@@ -161,8 +152,7 @@ public class Directory {
 
                         mySuccess = (_directory.putIfAbsent(kv.getKey(), kv.getValue()) == null);
 
-                    } else if ((myCurrent.getVersion() <= kv.getValue().getVersion()) &&
-                            (myCurrent.getTimestamp() <= kv.getValue().getTimestamp())) {
+                    } else if (myCurrent.getTimestamp() <= kv.getValue().getTimestamp()) {
 
                         mySuccess = _directory.replace(kv.getKey(), myCurrent, kv.getValue());
 
