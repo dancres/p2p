@@ -17,9 +17,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -29,6 +27,8 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * A directory service tracks information across all known peers. The information provided is entirely user-defined
  * via attributes. Liveness tests are supported via timestamps, versioning of attributes is encouraged.
+ *
+ * @todo Add support for dead node elimination
  */
 public class Directory {
     private static final Logger _logger = LoggerFactory.getLogger(Directory.class);
@@ -37,6 +37,16 @@ public class Directory {
     private final Peer.ServiceDispatcher _dispatcher;
     private final long _birthTime = System.currentTimeMillis();
     private final List<AttributeProducer> _producers = new CopyOnWriteArrayList<AttributeProducer>();
+    private final List<Listener> _listeners = new CopyOnWriteArrayList<Listener>();
+
+    private final Executor _notifier = Executors.newSingleThreadExecutor(new ThreadFactory() {
+        public Thread newThread(Runnable r) {
+            Thread myDaemon = new Thread(r);
+
+            myDaemon.setDaemon(true);
+            return myDaemon;
+        }
+    });
 
     public static class Entry {
         private final String _peerName;
@@ -137,7 +147,13 @@ public class Directory {
         _producers.add(aProducer);
     }
 
+    public void add(Listener aListener) {
+        _listeners.add(aListener);
+    }
+
     private void merge(Map<String, Entry> aRemoteDirectory) {
+        final List<String> myUpdatedPeers = new LinkedList<String>();
+
         for (Map.Entry<String, Directory.Entry> kv : aRemoteDirectory.entrySet()) {
 
             // Ignore my own directory
@@ -160,8 +176,19 @@ public class Directory {
                         break;
                     }
                 } while (mySuccess != true);
+
+                if (mySuccess)
+                    myUpdatedPeers.add(kv.getKey());
             }
         }
+
+        _notifier.execute(new Runnable() {
+            public void run() {
+                for (Listener l : _listeners) {
+                    l.updated(Directory.this, myUpdatedPeers);
+                }
+            }
+        });
     }
 
     class Dispatcher implements Peer.ServiceDispatcher {
@@ -230,4 +257,22 @@ public class Directory {
         Map<String, String> produce();
     }
 
+    public interface Listener {
+        public void updated(Directory aDirectory, List<String> anUpdatedPeers);
+    }
+
+    public static class ListenerImpl implements Listener {
+        private AtomicBoolean _doneFirst = new AtomicBoolean(false);
+        private Map<String, Entry> _base;
+
+        public void updated(Directory aDirectory, List<String> anUpdatedPeers) {
+            if (! _doneFirst.get())
+                synchronized(this) {
+                    if (_doneFirst.compareAndSet(false, true))
+                        _base = aDirectory.getDirectory();
+                }
+
+            // Apply update
+        }
+    }
 }

@@ -10,6 +10,7 @@ import org.junit.Test;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class DirTest {
     @Test
@@ -83,5 +84,39 @@ public class DirTest {
         Assert.assertNotNull(myAttrs);
         Assert.assertNotNull(myAttrs.get("testAttr"));
         Assert.assertEquals("testValue", myAttrs.get("testAttr"));
+    }
+
+    @Test
+    public void testListener() throws Exception {
+        HttpServer myServer = new HttpServer(new InetSocketAddress("localhost", 8083));
+        AsyncHttpClient myClient = new AsyncHttpClient();
+
+        Peer myPeer1 = new InProcessPeer(myServer, myClient, "/peer1", new Timer());
+        Peer myPeer2 = new InProcessPeer(myServer, myClient, "/peer2", new Timer());
+
+        Set<URI> myPeers = new HashSet<URI>();
+        myPeers.add(myPeer1.getAddress());
+        myPeers.add(myPeer2.getAddress());
+
+        PeerSet myPeerSet = new StaticPeerSet(myPeers);
+
+        Directory myPeer1Dir = new Directory(myPeer1, myPeerSet);
+        Directory myPeer2Dir = new Directory(myPeer2, myPeerSet);
+        final AtomicInteger myEventCount = new AtomicInteger(0);
+
+        myPeer1Dir.add(new Directory.Listener() {
+            public void updated(Directory aDirectory, List<String> anUpdatedPeers) {
+                myEventCount.incrementAndGet();
+            }
+        });
+
+        myPeer1Dir.start();
+
+        Thread.sleep(1000);
+
+        Assert.assertEquals(2, myPeer1Dir.getDirectory().size());
+        Assert.assertEquals(2, myPeer2Dir.getDirectory().size());
+
+        Assert.assertEquals(1, myEventCount.get());
     }
 }
