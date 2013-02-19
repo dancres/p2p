@@ -1,6 +1,10 @@
 package org.dancres.peers;
 
-import java.util.List;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
+import java.lang.reflect.Type;
+import java.util.*;
 
 /**
  * ring position leasing, ring position birth dates etc
@@ -36,7 +40,76 @@ import java.util.List;
  * position."
  */
 public class ConsistentHashRing {
-    public ConsistentHashRing(List<Integer> aRingPositions) {
+    private static final String RING_POSITIONS = "org.dancres.peers.consistentHashRing.ringPositions";
+    private final Peer _peer;
+    private final Directory _dir;
+    private final Set<Integer> _ourPositions = new HashSet<Integer>();
+    private final Set<Integer> _ringPositions = new HashSet<Integer>();
+
+    public ConsistentHashRing(Peer aPeer, Directory aDirectory, Set<Integer> aRingPositions) {
+        _peer = aPeer;
+        _dir = aDirectory;
+        _ourPositions.addAll(aRingPositions);
+        _ringPositions.addAll(aRingPositions);
+
+        _dir.add(new AttrProducerImpl());
+        _dir.add(new DirListenerImpl());
+    }
+
+    private class AttrProducerImpl implements Directory.AttributeProducer {
+        public Map<String, String> produce() {
+            Gson myGson = new Gson();
+            Map<String, String> myAttrs = new HashMap<String, String>();
+
+            myAttrs.put(RING_POSITIONS, myGson.toJson(_ourPositions));
+
+            return myAttrs;
+        }
+    }
+
+    private class DirListenerImpl implements Directory.Listener {
+        public void updated(Directory aDirectory, List<String> aNewPeers, List<String> anUpdatedPeers) {
+            Gson myGson = new Gson();
+            Type myRingSetType = new TypeToken<Set<Integer>>() {}.getType();
+
+            Map<String, Directory.Entry> myPeers = aDirectory.getDirectory();
+
+            for (String myPeerId : anUpdatedPeers) {
+                Map<String, String> myPeerAttrs = myPeers.get(myPeerId).getAttributes();
+
+                if (myPeerAttrs.containsKey(RING_POSITIONS)) {
+                    // Test version has jumped since we last recorded an update for this peer
+                    // If it has, we need to identify the ring positions that are changed/new
+                    // Then for each of these test for collision and the need to migrate as the result
+                    // of a new nearest neighbour below one of our positions
+                } else {
+                    // if this peer was a member of the ring, we need to drop its positions
+                }
+            }
+
+            for (String myPeerId : aNewPeers) {
+                Map<String, String> myPeerAttrs = myPeers.get(myPeerId).getAttributes();
+
+                if (myPeerAttrs.containsKey(RING_POSITIONS)) {
+                    Set<Integer> myPeersRingPosns = myGson.fromJson(myPeerAttrs.get(RING_POSITIONS), myRingSetType);
+
+                    for (Integer myRingPos : myPeersRingPosns) {
+                        if (_ourPositions.contains(myRingPos)) {
+                            /*
+                             * Collision, decide on a winner, if we lose, note we need to perform a re-allocation and
+                             * migrate.
+                             */
+                        } else {
+                            _ringPositions.add(myRingPos);
+
+                            /*
+                             * if this ring position is now the closest below one of mine, we need to perform a migrate
+                             */
+                        }
+                    }
+                }
+            }
+        }
     }
 
     public static class ContainerRef {
