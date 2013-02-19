@@ -105,7 +105,10 @@ public class DirTest {
         final AtomicInteger myEventCount = new AtomicInteger(0);
 
         myPeer1Dir.add(new Directory.Listener() {
-            public void updated(Directory aDirectory, List<String> anUpdatedPeers) {
+            public void updated(Directory aDirectory, List<String> aNewPeers, List<String> anUpdatedPeers) {
+                Assert.assertEquals(1, aNewPeers.size());
+                Assert.assertEquals(0, anUpdatedPeers.size());
+
                 myEventCount.incrementAndGet();
             }
         });

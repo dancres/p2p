@@ -152,6 +152,7 @@ public class Directory {
 
     private void merge(Map<String, Entry> aRemoteDirectory) {
         final List<String> myUpdatedPeers = new LinkedList<String>();
+        final List<String> myNewPeers = new LinkedList<String>();
 
         for (Map.Entry<String, Directory.Entry> kv : aRemoteDirectory.entrySet()) {
 
@@ -165,26 +166,29 @@ public class Directory {
 
                     if (myCurrent == null) {
 
-                        mySuccess = (_directory.putIfAbsent(kv.getKey(), kv.getValue()) == null);
+                        if (_directory.putIfAbsent(kv.getKey(), kv.getValue()) == null) {
+                            mySuccess = true;
+                            myNewPeers.add(kv.getKey());
+                        }
 
                     } else if (myCurrent.getTimestamp() <= kv.getValue().getTimestamp()) {
 
-                        mySuccess = _directory.replace(kv.getKey(), myCurrent, kv.getValue());
+                        if (_directory.replace(kv.getKey(), myCurrent, kv.getValue())) {
+                            mySuccess = true;
+                            myUpdatedPeers.add(kv.getKey());
+                        }
 
                     } else {
                         break;
                     }
                 } while (mySuccess != true);
-
-                if (mySuccess)
-                    myUpdatedPeers.add(kv.getKey());
             }
         }
 
         _notifier.execute(new Runnable() {
             public void run() {
                 for (Listener l : _listeners) {
-                    l.updated(Directory.this, myUpdatedPeers);
+                    l.updated(Directory.this, myNewPeers, myUpdatedPeers);
                 }
             }
         });
@@ -257,14 +261,14 @@ public class Directory {
     }
 
     public interface Listener {
-        public void updated(Directory aDirectory, List<String> anUpdatedPeers);
+        public void updated(Directory aDirectory, List<String> aNewPeers, List<String> anUpdatedPeers);
     }
 
     public static class ListenerImpl implements Listener {
         private AtomicBoolean _doneFirst = new AtomicBoolean(false);
         private Map<String, Entry> _base;
 
-        public void updated(Directory aDirectory, List<String> anUpdatedPeers) {
+        public void updated(Directory aDirectory, List<String> aNewPeers, List<String> anUpdatedPeers) {
             if (! _doneFirst.get())
                 synchronized(this) {
                     if (_doneFirst.compareAndSet(false, true))
