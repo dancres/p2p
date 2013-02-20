@@ -1,10 +1,9 @@
 package org.dancres.peers;
 
 import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 
-import java.lang.reflect.Type;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * ring position leasing, ring position birth dates etc
@@ -38,86 +37,68 @@ import java.util.*;
  * "Each data item identified by a key is assigned to a node by hashing the data item’s key to yield its position on
  * the ring, and then walking the ring clockwise to find the first node with a position larger than the item’s
  * position."
+ *
+ * Might want to leave migration to users of this code. Leaving us to figure out when there are new neighbours
+ * and collisions?
  */
 public class ConsistentHashRing {
-    private static final String RING_POSITIONS = "org.dancres.peers.consistentHashRing.ringPositions";
+    private static final String RING_MEMBERSHIP = "org.dancres.peers.consistentHashRing.ringMembership";
+
     private final Peer _peer;
     private final Directory _dir;
-    private final Set<Integer> _ourPositions = new HashSet<Integer>();
-    private final Set<Integer> _ringPositions = new HashSet<Integer>();
+    private final AtomicLong _membershipGeneration = new AtomicLong(0);
+    private final Random _rng = new Random();
+    private final Set<RingPosition> _ownedPositions;
+    private final Set<RingPosition> _allPositions;
 
-    public ConsistentHashRing(Peer aPeer, Directory aDirectory, Set<Integer> aRingPositions) {
+    public static class RingPosition implements Comparable {
+        private String _peerName;
+        private Integer _position;
+        private long _birthDate;
+
+        public RingPosition(String aPeerName, Integer aPosition) {
+            this(aPeerName, aPosition, System.currentTimeMillis());
+        }
+
+        RingPosition(String aPeerName, Integer aPosition, long aBirthDate) {
+            _peerName = aPeerName;
+            _position = aPosition;
+            _birthDate = aBirthDate;
+        }
+
+        public int compareTo(Object anObject) {
+            RingPosition myOther = (RingPosition) anObject;
+
+            return (_position.intValue() - myOther._position.intValue());
+        }
+    }
+
+    public ConsistentHashRing(Peer aPeer, Directory aDirectory) {
         _peer = aPeer;
         _dir = aDirectory;
-        _ourPositions.addAll(aRingPositions);
-        _ringPositions.addAll(aRingPositions);
+        _ownedPositions = new TreeSet<RingPosition>();
+        _allPositions = new TreeSet<RingPosition>();
 
         _dir.add(new AttrProducerImpl());
-        _dir.add(new DirListenerImpl());
+    }
+
+    public RingPosition newPosition() {
+        RingPosition myNewPos;
+
+        do {
+            myNewPos = new RingPosition(_peer.getAddress().toString(), _rng.nextInt());
+        } while ((_ownedPositions.contains(myNewPos)) || (_allPositions.contains(myNewPos)));
+
+        _ownedPositions.add(myNewPos);
+        _allPositions.add(myNewPos);
+
+        _membershipGeneration.incrementAndGet();
+
+        return myNewPos;
     }
 
     private class AttrProducerImpl implements Directory.AttributeProducer {
         public Map<String, String> produce() {
-            Gson myGson = new Gson();
-            Map<String, String> myAttrs = new HashMap<String, String>();
-
-            myAttrs.put(RING_POSITIONS, myGson.toJson(_ourPositions));
-
-            return myAttrs;
-        }
-    }
-
-    private class DirListenerImpl implements Directory.Listener {
-        public void updated(Directory aDirectory, List<String> aNewPeers, List<String> anUpdatedPeers) {
-            Gson myGson = new Gson();
-            Type myRingSetType = new TypeToken<Set<Integer>>() {}.getType();
-
-            Map<String, Directory.Entry> myPeers = aDirectory.getDirectory();
-
-            for (String myPeerId : anUpdatedPeers) {
-                Map<String, String> myPeerAttrs = myPeers.get(myPeerId).getAttributes();
-
-                if (myPeerAttrs.containsKey(RING_POSITIONS)) {
-                    // Test version has jumped since we last recorded an update for this peer
-                    // If it has, we need to identify the ring positions that are changed/new
-                    // Then for each of these test for collision and the need to migrate as the result
-                    // of a new nearest neighbour below one of our positions
-                } else {
-                    // if this peer was a member of the ring, we need to drop its positions
-                }
-            }
-
-            for (String myPeerId : aNewPeers) {
-                Map<String, String> myPeerAttrs = myPeers.get(myPeerId).getAttributes();
-
-                if (myPeerAttrs.containsKey(RING_POSITIONS)) {
-                    Set<Integer> myPeersRingPosns = myGson.fromJson(myPeerAttrs.get(RING_POSITIONS), myRingSetType);
-
-                    for (Integer myRingPos : myPeersRingPosns) {
-                        if (_ourPositions.contains(myRingPos)) {
-                            /*
-                             * Collision, decide on a winner, if we lose, note we need to perform a re-allocation and
-                             * migrate.
-                             */
-                        } else {
-                            _ringPositions.add(myRingPos);
-
-                            /*
-                             * if this ring position is now the closest below one of mine, we need to perform a migrate
-                             */
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    public static class ContainerRef {
-        public Integer getRingPosition() {
-            throw new UnsupportedOperationException();
-        }
-
-        public String getPeerId() {
             throw new UnsupportedOperationException();
         }
     }
@@ -132,28 +113,13 @@ public class ConsistentHashRing {
      * @param aHashCode
      * @return
      */
-    public ContainerRef allocate(Integer aHashCode) {
+    public RingPosition allocate(Integer aHashCode) {
         throw new UnsupportedOperationException();
     }
 
     public static interface Listener {
-        /**
-         * Invoked to indicate that resources associated with <code>aRingPosition</code> should be moved if a call
-         * to ConsistentHashing.allocate indicates the current ContainerId is no longer the most appropriate.
-         *
-         * @param aRingPosition
-         * @param aDest
-         */
-        public void migrate(Integer aRingPosition, ContainerRef aDest);
+        public void newNeighbour(RingPosition anOwnedPosition, RingPosition aNeighbourPosition);
 
-        /**
-         * Invoked to indicate that the local resource holder with id <code>aConflictingNodeId</code> needs renaming
-         * as it conflicts with another elsewhere and has been judged the loser.
-         *
-         * @param aConflictingRef
-         *
-         * @return a new ring position
-         */
-        public Integer reallocate(ContainerRef aConflictingRef);
+        public void rejected(RingPosition anOwnedPosition);
     }
 }
