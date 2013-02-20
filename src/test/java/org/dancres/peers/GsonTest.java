@@ -26,7 +26,7 @@ public class GsonTest {
         System.err.println("Result of unflatten: " + myUnflattened);
     }
 
-    static class Wrapper {
+    private static class Wrapper {
         private int _version;
         private Map<String, String> _props;
 
