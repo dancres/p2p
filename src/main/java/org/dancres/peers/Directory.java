@@ -151,8 +151,8 @@ public class Directory {
     }
 
     private void merge(Map<String, Entry> aRemoteDirectory) {
-        final List<String> myUpdatedPeers = new LinkedList<String>();
-        final List<String> myNewPeers = new LinkedList<String>();
+        final List<Entry> myUpdatedPeers = new LinkedList<Entry>();
+        final List<Entry> myNewPeers = new LinkedList<Entry>();
 
         for (Map.Entry<String, Directory.Entry> kv : aRemoteDirectory.entrySet()) {
 
@@ -168,14 +168,14 @@ public class Directory {
 
                         if (_directory.putIfAbsent(kv.getKey(), kv.getValue()) == null) {
                             mySuccess = true;
-                            myNewPeers.add(kv.getKey());
+                            myNewPeers.add(kv.getValue());
                         }
 
                     } else if (myCurrent.getTimestamp() <= kv.getValue().getTimestamp()) {
 
                         if (_directory.replace(kv.getKey(), myCurrent, kv.getValue())) {
                             mySuccess = true;
-                            myUpdatedPeers.add(kv.getKey());
+                            myUpdatedPeers.add(kv.getValue());
                         }
 
                     } else {
@@ -261,14 +261,14 @@ public class Directory {
     }
 
     public interface Listener {
-        public void updated(Directory aDirectory, List<String> aNewPeers, List<String> anUpdatedPeers);
+        public void updated(Directory aDirectory, List<Entry> aNewPeers, List<Entry> anUpdatedPeers);
     }
 
     public static class ListenerImpl implements Listener {
         private AtomicBoolean _doneFirst = new AtomicBoolean(false);
         private Map<String, Entry> _base;
 
-        public void updated(Directory aDirectory, List<String> aNewPeers, List<String> anUpdatedPeers) {
+        public void updated(Directory aDirectory, List<Entry> aNewPeers, List<Entry> anUpdatedPeers) {
             if (! _doneFirst.get())
                 synchronized(this) {
                     if (_doneFirst.compareAndSet(false, true))
