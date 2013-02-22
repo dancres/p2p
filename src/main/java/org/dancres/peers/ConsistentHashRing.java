@@ -1,10 +1,10 @@
 package org.dancres.peers;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 import com.google.gson.Gson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,6 +85,10 @@ public class ConsistentHashRing {
             return (_position - myOther._position);
         }
 
+        public int hashCode() {
+            return _peerName.hashCode() ^ _position.hashCode();
+        }
+
         public boolean equals(Object anObject) {
             if (anObject instanceof RingPosition) {
                 RingPosition myOther = (RingPosition) anObject;
@@ -133,6 +137,42 @@ public class ConsistentHashRing {
         }
     }
 
+    public static class NeighbourRelation {
+        private RingPosition _neighbour;
+        private RingPosition _owned;
+
+        NeighbourRelation(RingPosition aNeighbour, RingPosition aLocal) {
+            _neighbour = aNeighbour;
+            _owned = aLocal;
+        }
+
+        public RingPosition getNeighbour() {
+            return _neighbour;
+        }
+
+        public RingPosition getOwned() {
+            return _owned;
+        }
+
+        public boolean equals(Object anObject) {
+            if (anObject instanceof NeighbourRelation) {
+                NeighbourRelation myOther = (NeighbourRelation) anObject;
+
+                return ((_neighbour.equals(myOther._neighbour)) & (_owned.equals(myOther._owned)));
+            }
+
+            return false;
+        }
+
+        public int hashCode() {
+            return _neighbour.hashCode() ^ _owned.hashCode();
+        }
+
+        public String toString() {
+            return "NRel: " + _neighbour + ", " + _owned;
+        }
+    }
+
     private final Peer _peer;
     private final Directory _dir;
     private final Random _rng = new Random();
@@ -146,6 +186,11 @@ public class ConsistentHashRing {
      * The positions held by each node identified by address
      */
     private final Map<String, RingPositions> _ringPositions;
+
+    /**
+     * The neighbour relations
+     */
+    private HashSet<NeighbourRelation> _neighbours = new HashSet<NeighbourRelation>();
 
     private final List<Listener> _listeners = new LinkedList<Listener>();
 
@@ -178,19 +223,26 @@ public class ConsistentHashRing {
         return new Gson().fromJson(anEntry.getAttributes().get(RING_MEMBERSHIP), RingPositions.class);
     }
 
-    /**
-     * @todo neighbour analysis and announcements
-     *
-     * @todo What if we dynamically assemble the ring? We maintain the positions per peer already and could simply
-     * merge them all together with collision resolution. If the collision goes against a position we own, we need
-     * to signal listener otherwise we resolve silently.
-     *
-     * We could do this at each gossip point - simply updating each peer's positions then dynamically constructing
-     * the ring. We could use that result and the previous ring version to identify neighbour changes.
-     */
     private class DirListenerImpl implements Directory.Listener {
+        /**
+         * A locally inserted position will be communicated to other nodes as we gossip. Other nodes though may
+         * introduce no changes to the ring. <code>updated</code> is called for each gossip and sweep through the
+         * directory whether there are changes or not. We rely on this to run a conflict resolution sweep
+         * to do conflict resolution on our locally inserted positions. Thus at this moment we cannot avoid doing
+         * conflict resolution in absence of ring changes.
+         *
+         * @todo Modify new/insertPosition to do a sweep for conflict resolution so that we can implement a no
+         * gossip'd updates, no sweep optimisation.
+         *
+         * @param aDirectory
+         * @param aNewPeers
+         * @param anUpdatedPeers
+         */
         public void updated(Directory aDirectory, List<Directory.Entry> aNewPeers,
                             List<Directory.Entry> anUpdatedPeers) {
+
+            _logger.debug("Ring Update");
+
             for (Directory.Entry aNewEntry : Iterables.filter(aNewPeers, new Predicate<Directory.Entry>() {
                 public boolean apply(Directory.Entry entry) {
                     return entry.getAttributes().containsKey(RING_MEMBERSHIP);
@@ -225,10 +277,12 @@ public class ConsistentHashRing {
                 }
             }
 
-            // Build the ring from _ownedPositions plus _ringPosVersions
-            // Doing collision resolution as we go. In the case where one of our positions is the loser, remove it
-            // and report it to listeners.
-
+            /*
+             * Re-build the ring from _ringPositions
+             *
+             * Doing collision resolution as we go. In the case where one of our positions is the loser, remove it
+             * and report it to listeners.
+             */
             _allPositions.clear();
 
             List<RingPosition> myLocalRejections = new LinkedList<RingPosition>();
@@ -243,11 +297,13 @@ public class ConsistentHashRing {
                         _logger.debug("Got position conflict: " + myConflict + ", " + myRingPosn);
 
                         if (myConflict.bounces(myRingPosn)) {
-                            _logger.debug("Loser in conflict: " + myRingPosn);
+                            _logger.debug("Loser in conflict (new posn): " + myRingPosn);
 
                             // Are we the losing peer?
                             //
                             if (myRingPosn.isLocal(_peer)) {
+                                _logger.debug("We are the losing peer");
+
                                 for (Listener anL : _listeners) {
                                     anL.rejected(myRingPosn);
                                 }
@@ -255,7 +311,7 @@ public class ConsistentHashRing {
                                 myLocalRejections.add(myRingPosn);
                             }
                         } else {
-                            _logger.debug("Loser in conflict: " + myConflict);
+                            _logger.debug("Loser in conflict (conflict): " + myConflict);
 
                             _allPositions.put(myRingPosn.getPosition(), myRingPosn);
                         }
@@ -270,20 +326,43 @@ public class ConsistentHashRing {
                     myPosns.remove(myPosn);
             }
 
-            // Do neighbour analysis - sort it into descending order.
-            // Iterate: If the ringPos is one of ours, note the previous one we touched as a neighbour
-            // (together with a note of our pos)
-            // We initialise the previousTouched to be tail of the list to account for wraparound prior to looping
-            // Once we're looping we simply record the pos we just looked at in previousTouched
-            // We then compare the resultant sorted neighbours set with the previous version from the last run
-            // If there's anything in the new version that isn't in the old, we have a neighbour change.
-            // We can do this assessment using Iterables.removeIf potentially although only if we have some kind of
-            // tuple arrangement for our_pos, neighbour_pos
+            // No point in a diff if we're empty
+            //
+            if (_allPositions.isEmpty())
+                return;
 
             // Note that if the old neighbour's position was higher than the new, there is no need to report a change
             // because nothing would need moving but perhaps we leave that smart to the upper layers?
+            //
+            HashSet<NeighbourRelation> myNeighbours = new HashSet<NeighbourRelation>();
+            SortedSet<RingPosition> myRing = new TreeSet<RingPosition>(_allPositions.values());
+            RingPosition myLast = myRing.last();
 
-            // Announce to listeners any changes
+            for (RingPosition myPosn : myRing) {
+                if (myPosn.isLocal(_peer) && (! myPosn.equals(myLast))) {
+                    myNeighbours.add(new NeighbourRelation(myLast, myPosn));
+                }
+
+                myLast = myPosn;
+            }
+
+            _logger.debug("Neighbour sets: " + _neighbours + " vs\n" + myNeighbours);
+
+            for (NeighbourRelation myNR : _neighbours) {
+                _logger.debug("Same: " + myNeighbours.contains(myNR));
+            }
+
+            Set<NeighbourRelation> myChanges = Sets.difference(myNeighbours, _neighbours);
+
+            _logger.debug("Neighbour diff: " + myChanges);
+
+            if (! myChanges.isEmpty()) {
+                _neighbours = myNeighbours;
+
+                for (Listener myL : _listeners)
+                    for (NeighbourRelation myChange : myChanges)
+                        myL.newNeighbour(myChange._owned, myChange._neighbour);
+            }
         }
     }
 
@@ -292,6 +371,10 @@ public class ConsistentHashRing {
         _allPositions.put(aPosn.getPosition(), aPosn);
 
         return aPosn;
+    }
+
+    public Set<NeighbourRelation> getNeighbours() {
+        return Collections.unmodifiableSet(_neighbours);
     }
 
     public Collection<RingPosition> getCurrentRing() {
