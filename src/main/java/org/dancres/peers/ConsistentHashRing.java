@@ -110,8 +110,8 @@ public class ConsistentHashRing {
             _positions = new LinkedList<RingPosition>();
         }
 
-        public Long getGeneration() {
-            return _generation;
+        boolean supercedes(RingPositions aPositions) {
+            return _generation > aPositions._generation;
         }
 
         void add(RingPosition aPos) {
@@ -213,8 +213,8 @@ public class ConsistentHashRing {
 
                 // Was the positions list updated?
                 //
-                if ((myPrevious == null) || (myPeerPositions.getGeneration() >
-                        _ringPositions.get(anUpdatedEntry.getPeerName()).getGeneration())) {
+                if ((myPrevious == null) ||
+                        (myPeerPositions.supercedes(_ringPositions.get(anUpdatedEntry.getPeerName())))) {
 
                     if (myPrevious == null)
                         _logger.debug("New positions from: " + anUpdatedEntry.getPeerName(), myPeerPositions);
