@@ -53,12 +53,12 @@ public class ConsistentHashRing {
         private Integer _position;
         private long _birthDate;
 
-        RingPosition(String aPeerName, Integer aPosition) {
-            this(aPeerName, aPosition, System.currentTimeMillis());
+        RingPosition(Peer aPeer, Integer aPosition) {
+            this(aPeer, aPosition, System.currentTimeMillis());
         }
 
-        RingPosition(String aPeerName, Integer aPosition, long aBirthDate) {
-            _peerName = aPeerName;
+        RingPosition(Peer aPeer, Integer aPosition, long aBirthDate) {
+            _peerName = aPeer.getAddress();
             _position = aPosition;
             _birthDate = aBirthDate;
         }
@@ -67,8 +67,12 @@ public class ConsistentHashRing {
             return _position;
         }
 
-        public String getPeerName() {
-            return _peerName;
+        boolean bounces(RingPosition anotherPosn) {
+            return _birthDate > anotherPosn._birthDate;
+        }
+
+        boolean isLocal(Peer aPeer) {
+            return _peerName.equals(aPeer.getAddress());
         }
 
         public int compareTo(Object anObject) {
@@ -86,10 +90,6 @@ public class ConsistentHashRing {
             }
 
             return false;
-        }
-
-        boolean bounces(RingPosition anotherPosn) {
-            return _birthDate > anotherPosn._birthDate;
         }
     }
 
@@ -222,7 +222,7 @@ public class ConsistentHashRing {
                         if (myConflict.bounces(myRingPosn)) {
                             // Are we the losing peer?
                             //
-                            if (myRingPosn.getPeerName().equals(_peer.getAddress().toString())) {
+                            if (myRingPosn.isLocal(_peer)) {
                                 for (Listener anL : _listeners) {
                                     anL.rejected(myRingPosn);
                                 }
@@ -271,7 +271,7 @@ public class ConsistentHashRing {
         RingPosition myNewPos;
 
         do {
-            myNewPos = new RingPosition(_peer.getAddress(), _rng.nextInt());
+            myNewPos = new RingPosition(_peer, _rng.nextInt());
         } while (_allPositions.get(myNewPos.getPosition()) != null);
 
         return insertPosition(myNewPos);
