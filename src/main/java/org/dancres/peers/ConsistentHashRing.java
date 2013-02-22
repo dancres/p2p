@@ -6,6 +6,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.gson.Gson;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * ring position leasing, ring position birth dates etc
@@ -48,6 +50,8 @@ import com.google.gson.Gson;
 public class ConsistentHashRing {
     private static final String RING_MEMBERSHIP = "org.dancres.peers.consistentHashRing.ringMembership";
 
+    private static final Logger _logger = LoggerFactory.getLogger(ConsistentHashRing.class);
+
     public static class RingPosition implements Comparable {
         private String _peerName;
         private Integer _position;
@@ -68,7 +72,7 @@ public class ConsistentHashRing {
         }
 
         boolean bounces(RingPosition anotherPosn) {
-            return _birthDate > anotherPosn._birthDate;
+            return _birthDate < anotherPosn._birthDate;
         }
 
         boolean isLocal(Peer aPeer) {
@@ -91,9 +95,13 @@ public class ConsistentHashRing {
 
             return false;
         }
+
+        public String toString() {
+            return "RingPosn: " + _position + " @ " + _peerName + " born: " + _birthDate;
+        }
     }
 
-    private static class RingPositions {
+    public static class RingPositions {
         private Long _generation;
         private final List<RingPosition> _positions;
 
@@ -102,7 +110,7 @@ public class ConsistentHashRing {
             _positions = new LinkedList<RingPosition>();
         }
 
-        Long getGeneration() {
+        public Long getGeneration() {
             return _generation;
         }
 
@@ -116,8 +124,12 @@ public class ConsistentHashRing {
             _positions.remove(aPos);
         }
 
-        List<RingPosition> getPositions() {
+        public List<RingPosition> getPositions() {
             return Collections.unmodifiableList(_positions);
+        }
+
+        public String toString() {
+            return "RingPosns: " + _generation + " => " + _positions;
         }
     }
 
@@ -134,6 +146,7 @@ public class ConsistentHashRing {
      * The positions held by each node identified by address
      */
     private final Map<String, RingPositions> _ringPositions;
+
     private final List<Listener> _listeners = new LinkedList<Listener>();
 
     public ConsistentHashRing(Peer aPeer, Directory aDirectory) {
@@ -144,6 +157,7 @@ public class ConsistentHashRing {
         _ringPositions.put(_peer.getAddress(), new RingPositions());
 
         _dir.add(new AttrProducerImpl());
+        _dir.add(new DirListenerImpl());
     }
 
     private class AttrProducerImpl implements Directory.AttributeProducer {
@@ -184,8 +198,8 @@ public class ConsistentHashRing {
             })) {
                 RingPositions myPeerPositions = extractRingPositions(aNewEntry);
 
-                // Record the version of the ring positions
-                //
+                _logger.debug("New positions from new: " + aNewEntry.getPeerName(), myPeerPositions);
+
                 _ringPositions.put(aNewEntry.getPeerName(), myPeerPositions);
             }
 
@@ -195,11 +209,18 @@ public class ConsistentHashRing {
                 }
             })) {
                 RingPositions myPeerPositions = extractRingPositions(anUpdatedEntry);
+                RingPositions myPrevious = _ringPositions.get(anUpdatedEntry.getPeerName());
 
                 // Was the positions list updated?
                 //
-                if (myPeerPositions.getGeneration() >
-                        _ringPositions.get(anUpdatedEntry.getPeerName()).getGeneration()) {
+                if ((myPrevious == null) || (myPeerPositions.getGeneration() >
+                        _ringPositions.get(anUpdatedEntry.getPeerName()).getGeneration())) {
+
+                    if (myPrevious == null)
+                        _logger.debug("New positions from: " + anUpdatedEntry.getPeerName(), myPeerPositions);
+                    else
+                        _logger.debug("Updated positions from: " + anUpdatedEntry.getPeerName(), myPeerPositions);
+
                     _ringPositions.put(anUpdatedEntry.getPeerName(), myPeerPositions);
                 }
             }
@@ -219,7 +240,11 @@ public class ConsistentHashRing {
                     if (myConflict == null) {
                         _allPositions.put(myRingPosn.getPosition(), myRingPosn);
                     } else {
+                        _logger.debug("Got position conflict: " + myConflict + ", " + myRingPosn);
+
                         if (myConflict.bounces(myRingPosn)) {
+                            _logger.debug("Loser in conflict: " + myRingPosn);
+
                             // Are we the losing peer?
                             //
                             if (myRingPosn.isLocal(_peer)) {
@@ -230,6 +255,8 @@ public class ConsistentHashRing {
                                 myLocalRejections.add(myRingPosn);
                             }
                         } else {
+                            _logger.debug("Loser in conflict: " + myConflict);
+
                             _allPositions.put(myRingPosn.getPosition(), myRingPosn);
                         }
                     }
@@ -237,7 +264,7 @@ public class ConsistentHashRing {
             }
 
             if (! myLocalRejections.isEmpty()) {
-                RingPositions myPosns = _ringPositions.get(_peer.getAddress().toString());
+                RingPositions myPosns = _ringPositions.get(_peer.getAddress());
 
                 for (RingPosition myPosn : myLocalRejections)
                     myPosns.remove(myPosn);
@@ -265,6 +292,14 @@ public class ConsistentHashRing {
         _allPositions.put(aPosn.getPosition(), aPosn);
 
         return aPosn;
+    }
+
+    public Collection<RingPosition> getCurrentRing() {
+        return Collections.unmodifiableCollection(_allPositions.values());
+    }
+
+    public RingPositions getCurrentPositions() {
+        return _ringPositions.get(_peer.getAddress());
     }
 
     public RingPosition newPosition() {
