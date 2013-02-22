@@ -22,8 +22,8 @@ public class DirTest {
         Peer myPeer2 = new InProcessPeer(myServer, myClient, "/peer2", new Timer());
 
         Set<URI> myPeers = new HashSet<URI>();
-        myPeers.add(myPeer1.getAddress());
-        myPeers.add(myPeer2.getAddress());
+        myPeers.add(myPeer1.getURI());
+        myPeers.add(myPeer2.getURI());
 
         PeerSet myPeerSet = new StaticPeerSet(myPeers);
 
@@ -41,17 +41,17 @@ public class DirTest {
         Assert.assertEquals(2, myPeer1Dir.getDirectory().size());
         Assert.assertEquals(2, myPeer2Dir.getDirectory().size());
 
-        Assert.assertTrue(myPeer1Dir.getDirectory().containsKey(myPeer1.getAddress().toString()));
-        Assert.assertTrue(myPeer1Dir.getDirectory().containsKey(myPeer2.getAddress().toString()));
+        Assert.assertTrue(myPeer1Dir.getDirectory().containsKey(myPeer1.getAddress()));
+        Assert.assertTrue(myPeer1Dir.getDirectory().containsKey(myPeer2.getAddress()));
 
-        Assert.assertTrue(myPeer2Dir.getDirectory().containsKey(myPeer1.getAddress().toString()));
-        Assert.assertTrue(myPeer2Dir.getDirectory().containsKey(myPeer2.getAddress().toString()));
+        Assert.assertTrue(myPeer2Dir.getDirectory().containsKey(myPeer1.getAddress()));
+        Assert.assertTrue(myPeer2Dir.getDirectory().containsKey(myPeer2.getAddress()));
 
-        Directory.Entry myPeer1Entry = myPeer1Dir.getDirectory().get(myPeer1.getAddress().toString());
+        Directory.Entry myPeer1Entry = myPeer1Dir.getDirectory().get(myPeer1.getAddress());
 
         Assert.assertNotSame(myPeer1Entry.getBorn(), myPeer1Entry.getTimestamp());
 
-        Directory.Entry myPeer2Entry = myPeer2Dir.getDirectory().get(myPeer2.getAddress().toString());
+        Directory.Entry myPeer2Entry = myPeer2Dir.getDirectory().get(myPeer2.getAddress());
 
         Assert.assertNotSame(myPeer2Entry.getBorn(), myPeer2Entry.getTimestamp());
     }
@@ -64,7 +64,7 @@ public class DirTest {
         Peer myPeer1 = new InProcessPeer(myServer, myClient, "/peer1", new Timer());
 
         Set<URI> myPeers = new HashSet<URI>();
-        myPeers.add(myPeer1.getAddress());
+        myPeers.add(myPeer1.getURI());
 
         PeerSet myPeerSet = new StaticPeerSet(myPeers);
 
@@ -95,8 +95,8 @@ public class DirTest {
         Peer myPeer2 = new InProcessPeer(myServer, myClient, "/peer2", new Timer());
 
         Set<URI> myPeers = new HashSet<URI>();
-        myPeers.add(myPeer1.getAddress());
-        myPeers.add(myPeer2.getAddress());
+        myPeers.add(myPeer1.getURI());
+        myPeers.add(myPeer2.getURI());
 
         PeerSet myPeerSet = new StaticPeerSet(myPeers);
 

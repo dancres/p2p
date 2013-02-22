@@ -23,4 +23,13 @@ public class StaticPeerSet implements PeerSet {
 
         return myClone;
     }
+
+    public Set<String> getPeersAsStrings() {
+        Set<String> myClone = new HashSet<String>();
+
+        for (URI aP : _peerSet)
+            myClone.add(aP.toString());
+
+        return myClone;
+    }
 }

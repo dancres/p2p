@@ -226,7 +226,7 @@ public class Directory {
             AsyncHttpClient myClient = _peer.getClient();
 
             try {
-                myClient.preparePost(PeerSets.randomSelect(_peers, _peer.getAddress()).toString() +
+                myClient.preparePost(PeerSets.randomSelect(_peers, _peer.getURI()).toString() +
                         "/directory").setBody(
                         myGson.toJson(getDirectory())).execute(new AsyncCompletionHandler<Response>() {
 

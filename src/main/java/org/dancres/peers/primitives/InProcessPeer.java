@@ -53,8 +53,12 @@ public class InProcessPeer implements Peer {
         return _timer;
     }
 
-    public URI getAddress() {
+    public URI getURI() {
         return _fullAddress;
+    }
+
+    public String getAddress() {
+        return _fullAddress.toString();
     }
 
     public AsyncHttpClient getClient() {

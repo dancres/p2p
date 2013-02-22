@@ -18,7 +18,11 @@ public class SingleProcessPeer implements Peer {
         throw new UnsupportedOperationException();
     }
 
-    public URI getAddress() {
+    public URI getURI() {
+        throw new UnsupportedOperationException();
+    }
+
+    public String getAddress() {
         throw new UnsupportedOperationException();
     }
 

@@ -9,9 +9,14 @@ import java.util.Timer;
 
 public interface Peer {
     /**
+     *
+     */
+    public URI getURI();
+
+    /**
      * @return the URI at which this peer is rooted
      */
-    public URI getAddress();
+    public String getAddress();
 
     /**
      * Add a service to this peer
