@@ -1,9 +1,11 @@
 package org.dancres.peers;
 
-import com.google.gson.Gson;
-
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
+
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
+import com.google.gson.Gson;
 
 /**
  * ring position leasing, ring position birth dates etc
@@ -40,23 +42,18 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * Might want to leave migration to users of this code. Leaving us to figure out when there are new neighbours
  * and collisions?
+ *
+ * @todo Multi-threading
  */
 public class ConsistentHashRing {
     private static final String RING_MEMBERSHIP = "org.dancres.peers.consistentHashRing.ringMembership";
-
-    private final Peer _peer;
-    private final Directory _dir;
-    private final AtomicLong _membershipGeneration = new AtomicLong(0);
-    private final Random _rng = new Random();
-    private final Set<RingPosition> _ownedPositions;
-    private final Set<RingPosition> _allPositions;
 
     public static class RingPosition implements Comparable {
         private String _peerName;
         private Integer _position;
         private long _birthDate;
 
-        public RingPosition(String aPeerName, Integer aPosition) {
+        RingPosition(String aPeerName, Integer aPosition) {
             this(aPeerName, aPosition, System.currentTimeMillis());
         }
 
@@ -66,45 +63,222 @@ public class ConsistentHashRing {
             _birthDate = aBirthDate;
         }
 
+        public Integer getPosition() {
+            return _position;
+        }
+
+        public String getPeerName() {
+            return _peerName;
+        }
+
         public int compareTo(Object anObject) {
             RingPosition myOther = (RingPosition) anObject;
 
-            return (_position.intValue() - myOther._position.intValue());
+            return (_position - myOther._position);
+        }
+
+        public boolean equals(Object anObject) {
+            if (anObject instanceof RingPosition) {
+                RingPosition myOther = (RingPosition) anObject;
+
+                if (_peerName.equals(myOther._peerName))
+                    return (compareTo(anObject) == 0);
+            }
+
+            return false;
+        }
+
+        boolean bounces(RingPosition anotherPosn) {
+            return _birthDate > anotherPosn._birthDate;
         }
     }
+
+    private static class RingPositions {
+        private Long _generation;
+        private final List<RingPosition> _positions;
+
+        RingPositions() {
+            _generation = 0L;
+            _positions = new LinkedList<RingPosition>();
+        }
+
+        Long getGeneration() {
+            return _generation;
+        }
+
+        void add(RingPosition aPos) {
+            _generation++;
+            _positions.add(aPos);
+        }
+
+        void remove(RingPosition aPos) {
+            _generation++;
+            _positions.remove(aPos);
+        }
+
+        List<RingPosition> getPositions() {
+            return Collections.unmodifiableList(_positions);
+        }
+    }
+
+    private final Peer _peer;
+    private final Directory _dir;
+    private final Random _rng = new Random();
+
+    /**
+     * The current view of the hash ring
+     */
+    private final Map<Integer, RingPosition> _allPositions;
+
+    /**
+     * The positions held by each node identified by address
+     */
+    private final Map<String, RingPositions> _ringPositions;
+    private final List<Listener> _listeners = new LinkedList<Listener>();
 
     public ConsistentHashRing(Peer aPeer, Directory aDirectory) {
         _peer = aPeer;
         _dir = aDirectory;
-        _ownedPositions = new TreeSet<RingPosition>();
-        _allPositions = new TreeSet<RingPosition>();
+        _allPositions = new HashMap<Integer, RingPosition>();
+        _ringPositions = new HashMap<String, RingPositions>();
+        _ringPositions.put(_peer.getAddress(), new RingPositions());
 
         _dir.add(new AttrProducerImpl());
+    }
+
+    private class AttrProducerImpl implements Directory.AttributeProducer {
+        public Map<String, String> produce() {
+            Map<String, String> myFlattenedRingPosns = new HashMap<String, String>();
+
+            myFlattenedRingPosns.put(RING_MEMBERSHIP, flattenRingPositions(_ringPositions.get(_peer.getAddress())));
+
+            return myFlattenedRingPosns;
+        }
+    }
+
+    private String flattenRingPositions(RingPositions aPositions) {
+        return new Gson().toJson(_ringPositions.get(_peer.getAddress()));
+    }
+
+    private RingPositions extractRingPositions(Directory.Entry anEntry) {
+        return new Gson().fromJson(anEntry.getAttributes().get(RING_MEMBERSHIP), RingPositions.class);
+    }
+
+    /**
+     * @todo neighbour analysis and announcements
+     *
+     * @todo What if we dynamically assemble the ring? We maintain the positions per peer already and could simply
+     * merge them all together with collision resolution. If the collision goes against a position we own, we need
+     * to signal listener otherwise we resolve silently.
+     *
+     * We could do this at each gossip point - simply updating each peer's positions then dynamically constructing
+     * the ring. We could use that result and the previous ring version to identify neighbour changes.
+     */
+    private class DirListenerImpl implements Directory.Listener {
+        public void updated(Directory aDirectory, List<Directory.Entry> aNewPeers,
+                            List<Directory.Entry> anUpdatedPeers) {
+            for (Directory.Entry aNewEntry : Iterables.filter(aNewPeers, new Predicate<Directory.Entry>() {
+                public boolean apply(Directory.Entry entry) {
+                    return entry.getAttributes().containsKey(RING_MEMBERSHIP);
+                }
+            })) {
+                RingPositions myPeerPositions = extractRingPositions(aNewEntry);
+
+                // Record the version of the ring positions
+                //
+                _ringPositions.put(aNewEntry.getPeerName(), myPeerPositions);
+            }
+
+            for (Directory.Entry anUpdatedEntry : Iterables.filter(anUpdatedPeers, new Predicate<Directory.Entry>() {
+                public boolean apply(Directory.Entry entry) {
+                    return entry.getAttributes().containsKey(RING_MEMBERSHIP);
+                }
+            })) {
+                RingPositions myPeerPositions = extractRingPositions(anUpdatedEntry);
+
+                // Was the positions list updated?
+                //
+                if (myPeerPositions.getGeneration() >
+                        _ringPositions.get(anUpdatedEntry.getPeerName()).getGeneration()) {
+                    _ringPositions.put(anUpdatedEntry.getPeerName(), myPeerPositions);
+                }
+            }
+
+            // Build the ring from _ownedPositions plus _ringPosVersions
+            // Doing collision resolution as we go. In the case where one of our positions is the loser, remove it
+            // and report it to listeners.
+
+            _allPositions.clear();
+
+            List<RingPosition> myLocalRejections = new LinkedList<RingPosition>();
+
+            for (Map.Entry<String, RingPositions> myPeerAndPositions : _ringPositions.entrySet()) {
+                for (RingPosition myRingPosn : myPeerAndPositions.getValue().getPositions()) {
+                    RingPosition myConflict = _allPositions.get(myRingPosn.getPosition());
+
+                    if (myConflict == null) {
+                        _allPositions.put(myRingPosn.getPosition(), myRingPosn);
+                    } else {
+                        if (myConflict.bounces(myRingPosn)) {
+                            // Are we the losing peer?
+                            //
+                            if (myRingPosn.getPeerName().equals(_peer.getAddress().toString())) {
+                                for (Listener anL : _listeners) {
+                                    anL.rejected(myRingPosn);
+                                }
+
+                                myLocalRejections.add(myRingPosn);
+                            }
+                        } else {
+                            _allPositions.put(myRingPosn.getPosition(), myRingPosn);
+                        }
+                    }
+                }
+            }
+
+            if (! myLocalRejections.isEmpty()) {
+                RingPositions myPosns = _ringPositions.get(_peer.getAddress().toString());
+
+                for (RingPosition myPosn : myLocalRejections)
+                    myPosns.remove(myPosn);
+            }
+
+            // Do neighbour analysis - sort it into descending order.
+            // Iterate: If the ringPos is one of ours, note the previous one we touched as a neighbour
+            // (together with a note of our pos)
+            // We initialise the previousTouched to be tail of the list to account for wraparound prior to looping
+            // Once we're looping we simply record the pos we just looked at in previousTouched
+            // We then compare the resultant sorted neighbours set with the previous version from the last run
+            // If there's anything in the new version that isn't in the old, we have a neighbour change.
+            // We can do this assessment using Iterables.removeIf potentially although only if we have some kind of
+            // tuple arrangement for our_pos, neighbour_pos
+
+            // Note that if the old neighbour's position was higher than the new, there is no need to report a change
+            // because nothing would need moving but perhaps we leave that smart to the upper layers?
+
+            // Announce to listeners any changes
+        }
+    }
+
+    RingPosition insertPosition(RingPosition aPosn) {
+        _ringPositions.get(_peer.getAddress()).add(aPosn);
+        _allPositions.put(aPosn.getPosition(), aPosn);
+
+        return aPosn;
     }
 
     public RingPosition newPosition() {
         RingPosition myNewPos;
 
         do {
-            myNewPos = new RingPosition(_peer.getAddress().toString(), _rng.nextInt());
-        } while ((_ownedPositions.contains(myNewPos)) || (_allPositions.contains(myNewPos)));
+            myNewPos = new RingPosition(_peer.getAddress(), _rng.nextInt());
+        } while (_allPositions.get(myNewPos.getPosition()) != null);
 
-        _ownedPositions.add(myNewPos);
-        _allPositions.add(myNewPos);
-
-        _membershipGeneration.incrementAndGet();
-
-        return myNewPos;
-    }
-
-    private class AttrProducerImpl implements Directory.AttributeProducer {
-        public Map<String, String> produce() {
-            throw new UnsupportedOperationException();
-        }
+        return insertPosition(myNewPos);
     }
 
     public void add(Listener aListener) {
-        throw new UnsupportedOperationException();
+        _listeners.add(aListener);
     }
 
     /**
