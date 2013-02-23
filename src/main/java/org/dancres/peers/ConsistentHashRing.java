@@ -189,11 +189,6 @@ public class ConsistentHashRing {
      */
     private HashSet<NeighbourRelation> _neighbours = new HashSet<NeighbourRelation>();
 
-    /**
-     * The current view of the hash ring
-     */
-    private Map<Integer, RingPosition> _allPositions = new HashMap<Integer, RingPosition>();
-
     public ConsistentHashRing(Peer aPeer, Directory aDirectory) {
         _peer = aPeer;
         _dir = aDirectory;
@@ -288,8 +283,6 @@ public class ConsistentHashRing {
                     }
                 }
             }
-
-            _allPositions = myRingRebuild._newRing;
 
             // No point in a diff if we're empty
             //
@@ -406,7 +399,7 @@ public class ConsistentHashRing {
     }
 
     public Collection<RingPosition> getCurrentRing() {
-        return Collections.unmodifiableCollection(_allPositions.values());
+        return Collections.unmodifiableCollection(rebuildRing(_ringPositions)._newRing.values());
     }
 
     public RingPositions getCurrentPositions() {
