@@ -185,11 +185,14 @@ public class ConsistentHashRing {
     private final Map<String, RingPositions> _ringPositions = new HashMap<String, RingPositions>();
 
     /**
-     * The neighbour relations
+     * The neighbour relations - which positions are closest whilst still less than our own
      */
     private HashSet<NeighbourRelation> _neighbours = new HashSet<NeighbourRelation>();
 
-    private final List<Listener> _listeners = new LinkedList<Listener>();
+    /**
+     * The current view of the hash ring
+     */
+    private Map<Integer, RingPosition> _allPositions = new HashMap<Integer, RingPosition>();
 
     public ConsistentHashRing(Peer aPeer, Directory aDirectory) {
         _peer = aPeer;
@@ -274,8 +277,6 @@ public class ConsistentHashRing {
 
             RingRebuild myRingRebuild = rebuildRing(_ringPositions);
 
-            _allPositions = myRingRebuild._newRing;
-
             if (! myRingRebuild._rejected.isEmpty()) {
                 RingPositions myPosns = _ringPositions.get(_peer.getAddress());
 
@@ -288,9 +289,11 @@ public class ConsistentHashRing {
                 }
             }
 
+            _allPositions = myRingRebuild._newRing;
+
             // No point in a diff if we're empty
             //
-            if (_allPositions.isEmpty())
+            if (myRingRebuild._newRing.isEmpty())
                 return;
 
             NeighboursRebuild myNeighbourRebuild = rebuildNeighbours(_allPositions.values(), _neighbours, _peer);
@@ -303,7 +306,7 @@ public class ConsistentHashRing {
         }
     }
 
-    class RingRebuild {
+    private final static class RingRebuild {
         final Map<Integer, RingPosition> _newRing;
         final List<RingPosition> _rejected;
 
@@ -355,7 +358,7 @@ public class ConsistentHashRing {
         return new RingRebuild(myNewRing, myLocalRejections);
     }
 
-    class NeighboursRebuild {
+    private final static class NeighboursRebuild {
         final HashSet<NeighbourRelation> _neighbours;
         final Set<NeighbourRelation> _changes;
 
