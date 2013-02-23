@@ -2,6 +2,7 @@ package org.dancres.peers;
 
 import com.ning.http.client.AsyncHttpClient;
 import junit.framework.Assert;
+import org.dancres.peers.primitives.GossipBarrier;
 import org.dancres.peers.primitives.HttpServer;
 import org.dancres.peers.primitives.InProcessPeer;
 import org.dancres.peers.primitives.StaticPeerSet;
@@ -19,6 +20,8 @@ public class ConsistentHashRingTest {
     public void testListenerReject() throws Exception {
         HttpServer myServer = new HttpServer(new InetSocketAddress("localhost", 8081));
         AsyncHttpClient myClient = new AsyncHttpClient();
+        GossipBarrier myBarrier1 = new GossipBarrier();
+        GossipBarrier myBarrier2 = new GossipBarrier();
 
         Peer myPeer1 = new InProcessPeer(myServer, myClient, "/peer1", new Timer());
         Peer myPeer2 = new InProcessPeer(myServer, myClient, "/peer2", new Timer());
@@ -32,9 +35,16 @@ public class ConsistentHashRingTest {
         Directory myPeer1Dir = new Directory(myPeer1, myPeerSet);
         Directory myPeer2Dir = new Directory(myPeer2, myPeerSet);
 
+        myPeer1Dir.add(myBarrier1);
+        myPeer2Dir.add(myBarrier2);
+
+        int myBarr1Curr = myBarrier1.current();
+        int myBarr2Curr = myBarrier2.current();
+
         myPeer1Dir.start();
 
-        Thread.sleep(1000);
+        myBarrier1.await(myBarr1Curr);
+        myBarrier2.await(myBarr2Curr);
 
         Assert.assertEquals(2, myPeer1Dir.getDirectory().size());
         Assert.assertEquals(2, myPeer2Dir.getDirectory().size());
@@ -46,7 +56,11 @@ public class ConsistentHashRingTest {
 
         // Allow some gossip time so that this ring position has "taken" across the cluster of peers
         //
-        Thread.sleep(10000);
+        myBarr1Curr = myBarrier1.current();
+        myBarr2Curr = myBarrier2.current();
+
+        myBarrier1.await(myBarr1Curr);
+        myBarrier2.await(myBarr2Curr);
 
         AtomicInteger myPeer1RejectCount = new AtomicInteger(0);
         AtomicInteger myPeer2RejectCount = new AtomicInteger(0);
@@ -58,7 +72,11 @@ public class ConsistentHashRingTest {
         // Ring 2 contains a conflicting, newer position which when propagated should cause collisions in peer1
         // and peer2. Peer1 should be silent, Peer2 should complain
         //
-        Thread.sleep(10000);
+        myBarr1Curr = myBarrier1.current();
+        myBarr2Curr = myBarrier2.current();
+
+        myBarrier1.await(myBarr1Curr);
+        myBarrier2.await(myBarr2Curr);
 
         Assert.assertEquals(0, myPeer1RejectCount.get());
         Assert.assertEquals(1, myPeer2RejectCount.get());
@@ -93,6 +111,8 @@ public class ConsistentHashRingTest {
 
         Peer myPeer1 = new InProcessPeer(myServer, myClient, "/peer1", new Timer());
         Peer myPeer2 = new InProcessPeer(myServer, myClient, "/peer2", new Timer());
+        GossipBarrier myBarrier1 = new GossipBarrier();
+        GossipBarrier myBarrier2 = new GossipBarrier();
 
         Set<URI> myPeers = new HashSet<URI>();
         myPeers.add(myPeer1.getURI());
@@ -103,9 +123,16 @@ public class ConsistentHashRingTest {
         Directory myPeer1Dir = new Directory(myPeer1, myPeerSet);
         Directory myPeer2Dir = new Directory(myPeer2, myPeerSet);
 
+        myPeer1Dir.add(myBarrier1);
+        myPeer2Dir.add(myBarrier2);
+
+        int myBarr1Curr = myBarrier1.current();
+        int myBarr2Curr = myBarrier2.current();
+
         myPeer1Dir.start();
 
-        Thread.sleep(1000);
+        myBarrier1.await(myBarr1Curr);
+        myBarrier2.await(myBarr2Curr);
 
         Assert.assertEquals(2, myPeer1Dir.getDirectory().size());
         Assert.assertEquals(2, myPeer2Dir.getDirectory().size());
@@ -123,8 +150,13 @@ public class ConsistentHashRingTest {
         myRing2.insertPosition(new ConsistentHashRing.RingPosition(myPeer2, 3, System.currentTimeMillis()));
 
         // Allow some gossip time so that this ring position has "taken" across the cluster of peers
+        // Have to wait a couple of cycles because neighbour processing might lag a little behind our discovery
+        // events
         //
-        Thread.sleep(10000);
+        myBarrier1.await(myBarrier1.current());
+        myBarrier2.await(myBarrier2.current());
+        myBarrier1.await(myBarrier1.current());
+        myBarrier2.await(myBarrier2.current());
 
         Assert.assertEquals(1, myPeer1NeighbourCount.get());
         Assert.assertEquals(1, myPeer2NeighbourCount.get());
