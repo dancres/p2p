@@ -296,7 +296,9 @@ public class ConsistentHashRing {
             if (myRingRebuild._newRing.isEmpty())
                 return;
 
-            NeighboursRebuild myNeighbourRebuild = rebuildNeighbours(_allPositions.values(), _neighbours, _peer);
+            NeighboursRebuild myNeighbourRebuild =
+                    rebuildNeighbours(myRingRebuild._newRing.values(), _neighbours, _peer);
+
             _neighbours = myNeighbourRebuild._neighbours;
 
             if (! myNeighbourRebuild._changes.isEmpty())
@@ -418,13 +420,21 @@ public class ConsistentHashRing {
     }
 
     public RingPosition newPosition() {
-        RingPosition myNewPos;
+        // Simply flatten _ringPositions to get a view of current ring, don't care about peers or collision detection
+        //
+        HashSet<Integer> myOccupiedPositions = new HashSet<Integer>();
+
+        for (RingPositions myRPs : _ringPositions.values())
+            for (RingPosition myRP : myRPs.getPositions())
+                myOccupiedPositions.add(myRP.getPosition());
+
+        int myNewPos;
 
         do {
-            myNewPos = new RingPosition(_peer, _rng.nextInt());
-        } while (_allPositions.get(myNewPos.getPosition()) != null);
+            myNewPos = _rng.nextInt();
+        } while (myOccupiedPositions.contains(myNewPos));
 
-        return insertPosition(myNewPos);
+        return insertPosition(new RingPosition(_peer, myNewPos));
     }
 
     public void add(Listener aListener) {
