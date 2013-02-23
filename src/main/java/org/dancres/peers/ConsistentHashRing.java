@@ -180,12 +180,12 @@ public class ConsistentHashRing {
     /**
      * The current view of the hash ring
      */
-    private final Map<Integer, RingPosition> _allPositions;
+    private Map<Integer, RingPosition> _allPositions = new HashMap<Integer, RingPosition>();
 
     /**
      * The positions held by each node identified by address
      */
-    private final Map<String, RingPositions> _ringPositions;
+    private final Map<String, RingPositions> _ringPositions = new HashMap<String, RingPositions>();
 
     /**
      * The neighbour relations
@@ -197,8 +197,6 @@ public class ConsistentHashRing {
     public ConsistentHashRing(Peer aPeer, Directory aDirectory) {
         _peer = aPeer;
         _dir = aDirectory;
-        _allPositions = new HashMap<Integer, RingPosition>();
-        _ringPositions = new HashMap<String, RingPositions>();
         _ringPositions.put(_peer.getAddress(), new RingPositions());
 
         _dir.add(new AttrProducerImpl());
@@ -277,53 +275,20 @@ public class ConsistentHashRing {
                 }
             }
 
-            /*
-             * Re-build the ring from _ringPositions
-             *
-             * Doing collision resolution as we go. In the case where one of our positions is the loser, remove it
-             * and report it to listeners.
-             */
-            _allPositions.clear();
+            RingRebuild myRingRebuild = rebuildRing(_ringPositions);
 
-            List<RingPosition> myLocalRejections = new LinkedList<RingPosition>();
+            _allPositions = myRingRebuild._newRing;
 
-            for (Map.Entry<String, RingPositions> myPeerAndPositions : _ringPositions.entrySet()) {
-                for (RingPosition myRingPosn : myPeerAndPositions.getValue().getPositions()) {
-                    RingPosition myConflict = _allPositions.get(myRingPosn.getPosition());
-
-                    if (myConflict == null) {
-                        _allPositions.put(myRingPosn.getPosition(), myRingPosn);
-                    } else {
-                        _logger.debug("Got position conflict: " + myConflict + ", " + myRingPosn);
-
-                        if (myConflict.bounces(myRingPosn)) {
-                            _logger.debug("Loser in conflict (new posn): " + myRingPosn);
-
-                            // Are we the losing peer?
-                            //
-                            if (myRingPosn.isLocal(_peer)) {
-                                _logger.debug("We are the losing peer");
-
-                                for (Listener anL : _listeners) {
-                                    anL.rejected(myRingPosn);
-                                }
-
-                                myLocalRejections.add(myRingPosn);
-                            }
-                        } else {
-                            _logger.debug("Loser in conflict (conflict): " + myConflict);
-
-                            _allPositions.put(myRingPosn.getPosition(), myRingPosn);
-                        }
-                    }
-                }
-            }
-
-            if (! myLocalRejections.isEmpty()) {
+            if (! myRingRebuild._rejected.isEmpty()) {
                 RingPositions myPosns = _ringPositions.get(_peer.getAddress());
 
-                for (RingPosition myPosn : myLocalRejections)
+                for (RingPosition myPosn : myRingRebuild._rejected) {
                     myPosns.remove(myPosn);
+
+                    for (Listener anL : _listeners) {
+                        anL.rejected(myPosn);
+                    }
+                }
             }
 
             // No point in a diff if we're empty
@@ -331,46 +296,107 @@ public class ConsistentHashRing {
             if (_allPositions.isEmpty())
                 return;
 
-            // Note that if the old neighbour's position was higher than the new, there is no need to report a change
-            // because nothing would need moving but perhaps we leave that smart to the upper layers?
-            //
-            HashSet<NeighbourRelation> myNeighbours = new HashSet<NeighbourRelation>();
-            SortedSet<RingPosition> myRing = new TreeSet<RingPosition>(_allPositions.values());
-            RingPosition myLast = myRing.last();
+            NeighboursRebuild myNeighbourRebuild = rebuildNeighbours(_allPositions.values(), _neighbours, _peer);
+            _neighbours = myNeighbourRebuild._neighbours;
 
-            for (RingPosition myPosn : myRing) {
-                if (myPosn.isLocal(_peer) && (! myPosn.equals(myLast))) {
-                    myNeighbours.add(new NeighbourRelation(myLast, myPosn));
-                }
-
-                myLast = myPosn;
-            }
-
-            _logger.debug("Neighbour sets: " + _neighbours + " vs\n" + myNeighbours);
-
-            for (NeighbourRelation myNR : _neighbours) {
-                _logger.debug("Same: " + myNeighbours.contains(myNR));
-            }
-
-            Set<NeighbourRelation> myChanges = Sets.difference(myNeighbours, _neighbours);
-
-            _logger.debug("Neighbour diff: " + myChanges);
-
-            if (! myChanges.isEmpty()) {
-                _neighbours = myNeighbours;
-
+            if (! myNeighbourRebuild._changes.isEmpty())
                 for (Listener myL : _listeners)
-                    for (NeighbourRelation myChange : myChanges)
+                    for (NeighbourRelation myChange : myNeighbourRebuild._changes)
                         myL.newNeighbour(myChange._owned, myChange._neighbour);
-            }
         }
     }
 
-    RingPosition insertPosition(RingPosition aPosn) {
-        _ringPositions.get(_peer.getAddress()).add(aPosn);
-        _allPositions.put(aPosn.getPosition(), aPosn);
+    class RingRebuild {
+        final Map<Integer, RingPosition> _newRing;
+        final List<RingPosition> _rejected;
 
-        return aPosn;
+        RingRebuild(Map<Integer, RingPosition> aNewRing, List<RingPosition> aRejected) {
+            _newRing = aNewRing;
+            _rejected = aRejected;
+        }
+    }
+
+    private RingRebuild rebuildRing(Map<String, RingPositions> aRingPositions) {
+
+        /*
+         * Re-build the ring from _ringPositions
+         *
+         * Doing collision resolution as we go. In the case where one of our positions is the loser, remove it
+         * and report it to listeners.
+         */
+        Map<Integer, RingPosition> myNewRing = new HashMap<Integer, RingPosition>();
+        List<RingPosition> myLocalRejections = new LinkedList<RingPosition>();
+
+        for (Map.Entry<String, RingPositions> myPeerAndPositions : aRingPositions.entrySet()) {
+            for (RingPosition myRingPosn : myPeerAndPositions.getValue().getPositions()) {
+                RingPosition myConflict = myNewRing.get(myRingPosn.getPosition());
+
+                if (myConflict == null) {
+                    myNewRing.put(myRingPosn.getPosition(), myRingPosn);
+                } else {
+                    _logger.debug("Got position conflict: " + myConflict + ", " + myRingPosn);
+
+                    if (myConflict.bounces(myRingPosn)) {
+                        _logger.debug("Loser in conflict (new posn): " + myRingPosn);
+
+                        // Are we the losing peer?
+                        //
+                        if (myRingPosn.isLocal(_peer)) {
+                            _logger.debug("We are the losing peer");
+
+                            myLocalRejections.add(myRingPosn);
+                        }
+                    } else {
+                        _logger.debug("Loser in conflict (conflict): " + myConflict);
+
+                        myNewRing.put(myRingPosn.getPosition(), myRingPosn);
+                    }
+                }
+            }
+        }
+
+        return new RingRebuild(myNewRing, myLocalRejections);
+    }
+
+    class NeighboursRebuild {
+        final HashSet<NeighbourRelation> _neighbours;
+        final Set<NeighbourRelation> _changes;
+
+        NeighboursRebuild(HashSet<NeighbourRelation> aNeighbours, Set<NeighbourRelation> aChanges) {
+            _neighbours = aNeighbours;
+            _changes = aChanges;
+        }
+    }
+
+    private NeighboursRebuild rebuildNeighbours(Collection<RingPosition> aRing,
+                                                         HashSet<NeighbourRelation> anOldNeighbours,
+                                                         Peer aLocal) {
+        // Note that if the old neighbour's position was higher than the new, there is no need to report a change
+        // because nothing would need moving but perhaps we leave that smart to the upper layers?
+        //
+        HashSet<NeighbourRelation> myNeighbours = new HashSet<NeighbourRelation>();
+        SortedSet<RingPosition> myRing = new TreeSet<RingPosition>(aRing);
+        RingPosition myLast = myRing.last();
+
+        for (RingPosition myPosn : myRing) {
+            if (myPosn.isLocal(aLocal) && (! myPosn.equals(myLast))) {
+                myNeighbours.add(new NeighbourRelation(myLast, myPosn));
+            }
+
+            myLast = myPosn;
+        }
+
+        _logger.debug("Neighbour sets: " + anOldNeighbours + " vs\n" + myNeighbours);
+
+        for (NeighbourRelation myNR : anOldNeighbours) {
+            _logger.debug("Same: " + myNeighbours.contains(myNR));
+        }
+
+        Set<NeighbourRelation> myChanges = Sets.difference(myNeighbours, anOldNeighbours);
+
+        _logger.debug("Neighbour diff: " + myChanges);
+
+        return new NeighboursRebuild(myNeighbours, myChanges);
     }
 
     public Set<NeighbourRelation> getNeighbours() {
@@ -383,6 +409,13 @@ public class ConsistentHashRing {
 
     public RingPositions getCurrentPositions() {
         return _ringPositions.get(_peer.getAddress());
+    }
+
+    RingPosition insertPosition(RingPosition aPosn) {
+        _ringPositions.get(_peer.getAddress()).add(aPosn);
+        _allPositions.put(aPosn.getPosition(), aPosn);
+
+        return aPosn;
     }
 
     public RingPosition newPosition() {
