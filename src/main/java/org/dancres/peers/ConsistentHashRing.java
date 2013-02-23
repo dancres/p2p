@@ -413,7 +413,6 @@ public class ConsistentHashRing {
 
     RingPosition insertPosition(RingPosition aPosn) {
         _ringPositions.get(_peer.getAddress()).add(aPosn);
-        _allPositions.put(aPosn.getPosition(), aPosn);
 
         return aPosn;
     }
