@@ -2,6 +2,7 @@ package org.dancres.peers;
 
 import com.ning.http.client.AsyncHttpClient;
 import junit.framework.Assert;
+import org.dancres.peers.primitives.GossipBarrier;
 import org.dancres.peers.primitives.HttpServer;
 import org.dancres.peers.primitives.InProcessPeer;
 import org.dancres.peers.primitives.StaticPeerSet;
@@ -29,14 +30,23 @@ public class DirTest {
 
         Directory myPeer1Dir = new Directory(myPeer1, myPeerSet);
         Directory myPeer2Dir = new Directory(myPeer2, myPeerSet);
+        GossipBarrier myBarrier1 = new GossipBarrier();
+        GossipBarrier myBarrier2 = new GossipBarrier();
+
+        myPeer1Dir.add(myBarrier1);
+        myPeer2Dir.add(myBarrier2);
 
         // We want some skew between birth time of directory and gossip time to test timestamp/liveness
         //
         Thread.sleep(1000);
 
+        int myBarr1 = myBarrier1.current();
+        int myBarr2 = myBarrier1.current();
+
         myPeer1Dir.start();
 
-        Thread.sleep(1000);
+        myBarrier1.await(myBarr1);
+        myBarrier1.await(myBarr2);
 
         Assert.assertEquals(2, myPeer1Dir.getDirectory().size());
         Assert.assertEquals(2, myPeer2Dir.getDirectory().size());
@@ -104,6 +114,12 @@ public class DirTest {
         Directory myPeer2Dir = new Directory(myPeer2, myPeerSet);
         final AtomicInteger myEventCount = new AtomicInteger(0);
 
+        GossipBarrier myBarrier1 = new GossipBarrier();
+        GossipBarrier myBarrier2 = new GossipBarrier();
+
+        myPeer1Dir.add(myBarrier1);
+        myPeer2Dir.add(myBarrier2);
+
         myPeer1Dir.add(new Directory.Listener() {
             public void updated(Directory aDirectory, List<Directory.Entry> aNewPeers,
                                 List<Directory.Entry> anUpdatedPeers) {
@@ -114,9 +130,13 @@ public class DirTest {
             }
         });
 
+        int myBarr1 = myBarrier1.current();
+        int myBarr2 = myBarrier1.current();
+
         myPeer1Dir.start();
 
-        Thread.sleep(1000);
+        myBarrier1.await(myBarr1);
+        myBarrier1.await(myBarr2);
 
         Assert.assertEquals(2, myPeer1Dir.getDirectory().size());
         Assert.assertEquals(2, myPeer2Dir.getDirectory().size());
