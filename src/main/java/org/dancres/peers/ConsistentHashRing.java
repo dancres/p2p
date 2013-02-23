@@ -1,6 +1,7 @@
 package org.dancres.peers;
 
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
@@ -176,11 +177,7 @@ public class ConsistentHashRing {
     private final Peer _peer;
     private final Directory _dir;
     private final Random _rng = new Random();
-
-    /**
-     * The current view of the hash ring
-     */
-    private Map<Integer, RingPosition> _allPositions = new HashMap<Integer, RingPosition>();
+    private final List<Listener> _listeners = new CopyOnWriteArrayList<Listener>();
 
     /**
      * The positions held by each node identified by address
