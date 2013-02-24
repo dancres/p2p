@@ -1,6 +1,8 @@
 package org.dancres.peers;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -202,7 +204,7 @@ public class ConsistentHashRing {
     /**
      * The positions held by each node identified by address
      */
-    private final Map<String, RingPositions> _ringPositions = new HashMap<String, RingPositions>();
+    private final ConcurrentMap<String, RingPositions> _ringPositions = new ConcurrentHashMap<String, RingPositions>();
 
     /**
      * The neighbour relations - which positions are closest whilst still less than our own
@@ -294,8 +296,8 @@ public class ConsistentHashRing {
             RingRebuild myRingRebuild = rebuildRing(_ringPositions);
 
             if (! myRingRebuild._rejected.isEmpty()) {
-                RingPositions myPosns = _ringPositions.get(_peer.getAddress());
-                _ringPositions.put(_peer.getAddress(), myPosns.remove(myRingRebuild._rejected));
+                RingPositions myOldPosns = _ringPositions.get(_peer.getAddress());
+                _ringPositions.replace(_peer.getAddress(), myOldPosns, myOldPosns.remove(myRingRebuild._rejected));
 
                 for (RingPosition myPosn : myRingRebuild._rejected) {
                     for (Listener anL : _listeners) {
@@ -472,8 +474,8 @@ public class ConsistentHashRing {
     }
 
     RingPosition insertPosition(RingPosition aPosn) {
-        RingPositions myPosns = _ringPositions.get(_peer.getAddress());
-        _ringPositions.put(_peer.getAddress(), myPosns.add(Collections.singletonList(aPosn)));
+        RingPositions myOldPosns = _ringPositions.get(_peer.getAddress());
+        _ringPositions.replace(_peer.getAddress(), myOldPosns, myOldPosns.add(Collections.singletonList(aPosn)));
 
         return aPosn;
     }
