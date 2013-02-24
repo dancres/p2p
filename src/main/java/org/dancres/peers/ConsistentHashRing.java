@@ -115,25 +115,27 @@ public class ConsistentHashRing {
             _positions = new HashSet<RingPosition>();
         }
 
+        public RingPositions(long aGeneration, HashSet<RingPosition> aPositions) {
+            _generation = aGeneration;
+            _positions = aPositions;
+        }
+
         boolean supercedes(RingPositions aPositions) {
             return _generation > aPositions._generation;
         }
 
-        /**
-         * @todo Should return a new RingPositions - in this way we can generate an update based on an original
-         * and perform a test and replace for concurrent updates
-         */
-        void add(RingPosition aPos) {
-            _generation++;
-            _positions.add(aPos);
+        RingPositions add(Collection<RingPosition> aPositions) {
+            HashSet<RingPosition> myPositions = new HashSet<RingPosition>(_positions);
+            myPositions.addAll(aPositions);
+
+            return new RingPositions(_generation + 1, myPositions);
         }
 
-        /**
-         * @todo Should return a new RingPositions
-         */
-        void remove(RingPosition aPos) {
-            _generation++;
-            _positions.remove(aPos);
+        RingPositions remove(Collection<RingPosition> aPositions) {
+            HashSet<RingPosition> myPositions = new HashSet<RingPosition>(_positions);
+            myPositions.removeAll(aPositions);
+
+            return new RingPositions(_generation + 1, myPositions);
         }
 
         public Set<RingPosition> getPositions() {
@@ -291,10 +293,9 @@ public class ConsistentHashRing {
 
             if (! myRingRebuild._rejected.isEmpty()) {
                 RingPositions myPosns = _ringPositions.get(_peer.getAddress());
+                _ringPositions.put(_peer.getAddress(), myPosns.remove(myRingRebuild._rejected));
 
                 for (RingPosition myPosn : myRingRebuild._rejected) {
-                    myPosns.remove(myPosn);
-
                     for (Listener anL : _listeners) {
                         anL.rejected(myPosn);
                     }
@@ -307,9 +308,12 @@ public class ConsistentHashRing {
                 return;
 
             /*
-             * JVM Bug! If rebuildNeighbours does not return two completely independent sets, the following clear
-             * and addAll will cause _changes to become empty in spite of the fact that it's possible duplicate
-             * myNeighbourRebuild._neighbours is not empty.
+             * JVM Bug! Seemingly if rebuildNeighbours does not return two completely independent sets, the following
+             * clear and addAll will cause _changes to become empty in spite of the fact that it's possible duplicate
+             * myNeighbourRebuild._neighbours is not empty. Another possibility is that a second final field in a simple
+             * return object, as done with ring and neighbour computations, causes problems. Notably both methods
+             * have required the same treatment to prevent loss of set contents and thus the latter seems more likely.
+             * Perhaps something to do with stack scope?
              */
             NeighboursRebuild myNeighbourRebuild =
                     rebuildNeighbours(myRingRebuild._newRing.values(), _neighbours, _peer);
@@ -352,7 +356,7 @@ public class ConsistentHashRing {
         }
     }
 
-    private final static class RingRebuild {
+    private static class RingRebuild {
         final Map<Integer, RingPosition> _newRing;
         final List<RingPosition> _rejected;
 
@@ -401,10 +405,10 @@ public class ConsistentHashRing {
             }
         }
 
-        return new RingRebuild(myNewRing, myLocalRejections);
+        return new RingRebuild(myNewRing, new LinkedList<RingPosition>(myLocalRejections));
     }
 
-    private final static class NeighboursRebuild {
+    private static class NeighboursRebuild {
         final HashSet<NeighbourRelation> _neighbours;
         final Set<NeighbourRelation> _changes;
 
@@ -464,7 +468,8 @@ public class ConsistentHashRing {
     }
 
     RingPosition insertPosition(RingPosition aPosn) {
-        _ringPositions.get(_peer.getAddress()).add(aPosn);
+        RingPositions myPosns = _ringPositions.get(_peer.getAddress());
+        _ringPositions.put(_peer.getAddress(), myPosns.add(Collections.singletonList(aPosn)));
 
         return aPosn;
     }
