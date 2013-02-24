@@ -2,6 +2,7 @@ package org.dancres.peers;
 
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
@@ -206,7 +207,8 @@ public class ConsistentHashRing {
     /**
      * The neighbour relations - which positions are closest whilst still less than our own
      */
-    private final HashSet<NeighbourRelation> _neighbours = new HashSet<NeighbourRelation>();
+    private final AtomicReference<HashSet<NeighbourRelation>> _neighbours =
+            new AtomicReference<HashSet<NeighbourRelation>>(new HashSet<NeighbourRelation>());
 
     public ConsistentHashRing(Peer aPeer, Directory aDirectory) {
         _peer = aPeer;
@@ -316,7 +318,7 @@ public class ConsistentHashRing {
              * Perhaps something to do with stack scope?
              */
             NeighboursRebuild myNeighbourRebuild =
-                    rebuildNeighbours(myRingRebuild._newRing.values(), _neighbours, _peer);
+                    rebuildNeighbours(myRingRebuild._newRing.values(), _neighbours.get(), _peer);
 
             /*
             _logger.debug(Thread.currentThread() + " " + this + " Rebuild: " + myNeighbourRebuild._neighbours +
@@ -327,7 +329,7 @@ public class ConsistentHashRing {
                     " " + System.identityHashCode(_neighbours));
              */
 
-            _neighbours.clear();
+            // _neighbours.clear();
 
             /*
             _logger.debug(Thread.currentThread() + " " + this + " Rebuild after 1: " + myNeighbourRebuild._neighbours +
@@ -338,7 +340,7 @@ public class ConsistentHashRing {
                     " " + System.identityHashCode(_neighbours));
              */
 
-            _neighbours.addAll(myNeighbourRebuild._neighbours);
+            // _neighbours.addAll(myNeighbourRebuild._neighbours);
 
             /*
             _logger.debug(Thread.currentThread() + " " + this + " Rebuild after 2: " + myNeighbourRebuild._neighbours +
@@ -348,6 +350,8 @@ public class ConsistentHashRing {
             _logger.debug(Thread.currentThread() + " " + this + " Neighbours after 2: " + _neighbours +
                     " " + System.identityHashCode(_neighbours));
              */
+
+            _neighbours.set(myNeighbourRebuild._neighbours);
 
             if (! myNeighbourRebuild._changes.isEmpty())
                 for (Listener myL : _listeners)
@@ -456,7 +460,7 @@ public class ConsistentHashRing {
     }
 
     public Set<NeighbourRelation> getNeighbours() {
-        return Collections.unmodifiableSet(_neighbours);
+        return Collections.unmodifiableSet(_neighbours.get());
     }
 
     public Collection<RingPosition> getCurrentRing() {
