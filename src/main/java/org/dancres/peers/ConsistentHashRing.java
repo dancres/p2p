@@ -119,11 +119,18 @@ public class ConsistentHashRing {
             return _generation > aPositions._generation;
         }
 
+        /**
+         * @todo Should return a new RingPositions - in this way we can generate an update based on an original
+         * and perform a test and replace for concurrent updates
+         */
         void add(RingPosition aPos) {
             _generation++;
             _positions.add(aPos);
         }
 
+        /**
+         * @todo Should return a new RingPositions
+         */
         void remove(RingPosition aPos) {
             _generation++;
             _positions.remove(aPos);
@@ -197,7 +204,7 @@ public class ConsistentHashRing {
     /**
      * The neighbour relations - which positions are closest whilst still less than our own
      */
-    private HashSet<NeighbourRelation> _neighbours = new HashSet<NeighbourRelation>();
+    private final HashSet<NeighbourRelation> _neighbours = new HashSet<NeighbourRelation>();
 
     public ConsistentHashRing(Peer aPeer, Directory aDirectory) {
         _peer = aPeer;
@@ -299,10 +306,44 @@ public class ConsistentHashRing {
             if (myRingRebuild._newRing.isEmpty())
                 return;
 
+            /*
+             * JVM Bug! If rebuildNeighbours does not return two completely independent sets, the following clear
+             * and addAll will cause _changes to become empty in spite of the fact that it's possible duplicate
+             * myNeighbourRebuild._neighbours is not empty.
+             */
             NeighboursRebuild myNeighbourRebuild =
                     rebuildNeighbours(myRingRebuild._newRing.values(), _neighbours, _peer);
 
-            _neighbours = myNeighbourRebuild._neighbours;
+            /*
+            _logger.debug(Thread.currentThread() + " " + this + " Rebuild: " + myNeighbourRebuild._neighbours +
+                    " " + System.identityHashCode(myNeighbourRebuild._neighbours));
+            _logger.debug(Thread.currentThread() + " " + this + " Changes before: " + myNeighbourRebuild._changes +
+                    " " + System.identityHashCode(myNeighbourRebuild._changes));
+            _logger.debug(Thread.currentThread() + " " + this + " Neighbours before: " + _neighbours +
+                    " " + System.identityHashCode(_neighbours));
+             */
+
+            _neighbours.clear();
+
+            /*
+            _logger.debug(Thread.currentThread() + " " + this + " Rebuild after 1: " + myNeighbourRebuild._neighbours +
+                    " " + System.identityHashCode(myNeighbourRebuild._neighbours));
+            _logger.debug(Thread.currentThread() + " " + this + " Changes after 1: " + myNeighbourRebuild._changes +
+                    " " + System.identityHashCode(myNeighbourRebuild._changes));
+            _logger.debug(Thread.currentThread() + " " + this + " Neighbours after 1: " + _neighbours +
+                    " " + System.identityHashCode(_neighbours));
+             */
+
+            _neighbours.addAll(myNeighbourRebuild._neighbours);
+
+            /*
+            _logger.debug(Thread.currentThread() + " " + this + " Rebuild after 2: " + myNeighbourRebuild._neighbours +
+                    " " + System.identityHashCode(myNeighbourRebuild._neighbours));
+            _logger.debug(Thread.currentThread() + " " + this + " Changes after 2: " + myNeighbourRebuild._changes +
+                    " " + System.identityHashCode(myNeighbourRebuild._changes));
+            _logger.debug(Thread.currentThread() + " " + this + " Neighbours after 2: " + _neighbours +
+                    " " + System.identityHashCode(_neighbours));
+             */
 
             if (! myNeighbourRebuild._changes.isEmpty())
                 for (Listener myL : _listeners)
@@ -397,9 +438,15 @@ public class ConsistentHashRing {
             _logger.debug("Same: " + myNeighbours.contains(myNR));
         }
 
-        Set<NeighbourRelation> myChanges = Sets.difference(myNeighbours, anOldNeighbours);
+        /*
+         * JVM Workaround - if this result is not wrapped in a new hashset, the clearAll/addAll in
+         * DirectoryListenerImpl.update will cause the changes set to be empty!
+         */
+        Set<NeighbourRelation> myChanges =
+                 new HashSet<NeighbourRelation>(Sets.difference(myNeighbours, anOldNeighbours));
 
-        _logger.debug("Neighbour diff: " + myChanges);
+        _logger.debug("Neighbour diff: " + myChanges + " " + myChanges.equals(myNeighbours) + " " +
+                myChanges.equals(anOldNeighbours));
 
         return new NeighboursRebuild(myNeighbours, myChanges);
     }
