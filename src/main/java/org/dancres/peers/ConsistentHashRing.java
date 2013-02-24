@@ -13,44 +13,6 @@ import com.google.gson.Gson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * ring position leasing, ring position birth dates etc
- *
- * Allocate ourselves some set of ring positions, each with an id (say a random integer which fits nicely with
- * hashCode()).
- *
- * Each ring position has a birth date which we can use to resolve collisions.
- *
- * As each node in the ring can perform the hash and determine the ring position to assign it a uniquely identified
- * (UUID or String or ?) value to, any client can write to any node although it would be best if the client cached
- * the map itself (implement this later). We will store the key, value and the key hashcode.
- *
- * The Directory will announce the comings and goings of nodes and we will interrogate new or updated nodes for their
- * ring positions, dumping any they were previously associated with.
- *
- * Should we detect a ring position that clashes with our locally allocated ring positions we first compare birth dates
- * and the oldest one wins. If that doesn't work, we consider peer ids and chose a winner from that (lexically or
- * maybe hashCode comparison).
- *
- * Once a winner is determined, the loser is re-numbered randomly and then a job is kicked off to migrate any values to
- * the winner ring position (those with a key that hashes to an appropriate value).
- *
- * A similar value migration strategy is adopted when we detect a new ring position that is adjacent (that is it is less
- * than ours but greater than all others less than ours) to ours. We kick a job off to migrate any values to this
- * new ring position.
- *
- * ring positions can be maintained by a different service within the peer and it will support a migrate function that
- * moves values between ring positions.
- *
- * "Each data item identified by a key is assigned to a node by hashing the data item’s key to yield its position on
- * the ring, and then walking the ring clockwise to find the first node with a position larger than the item’s
- * position."
- *
- * Might want to leave migration to users of this code. Leaving us to figure out when there are new neighbours
- * and collisions?
- *
- * @todo Multi-threading
- */
 public class ConsistentHashRing {
     private static final String RING_MEMBERSHIP = "org.dancres.peers.consistentHashRing.ringMembership";
 
