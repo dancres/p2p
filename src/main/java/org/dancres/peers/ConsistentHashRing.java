@@ -322,8 +322,8 @@ public class ConsistentHashRing {
         Map<Integer, RingPosition> myNewRing = new HashMap<Integer, RingPosition>();
         List<RingPosition> myLocalRejections = new LinkedList<RingPosition>();
 
-        for (Map.Entry<String, RingPositions> myPeerAndPositions : aRingPositions.entrySet()) {
-            for (RingPosition myRingPosn : myPeerAndPositions.getValue().getPositions()) {
+        for (RingPositions myRingPositions : aRingPositions.values()) {
+            for (RingPosition myRingPosn : myRingPositions.getPositions()) {
                 RingPosition myConflict = myNewRing.get(myRingPosn.getPosition());
 
                 if (myConflict == null) {
