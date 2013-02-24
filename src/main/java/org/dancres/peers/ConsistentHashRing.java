@@ -107,7 +107,7 @@ public class ConsistentHashRing {
     }
 
     public static class RingPositions {
-        private Long _generation;
+        private final Long _generation;
         private final Set<RingPosition> _positions;
 
         RingPositions() {
