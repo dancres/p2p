@@ -108,11 +108,11 @@ public class ConsistentHashRing {
 
     public static class RingPositions {
         private Long _generation;
-        private final List<RingPosition> _positions;
+        private final Set<RingPosition> _positions;
 
         RingPositions() {
             _generation = 0L;
-            _positions = new LinkedList<RingPosition>();
+            _positions = new HashSet<RingPosition>();
         }
 
         boolean supercedes(RingPositions aPositions) {
@@ -129,12 +129,22 @@ public class ConsistentHashRing {
             _positions.remove(aPos);
         }
 
-        public List<RingPosition> getPositions() {
-            return Collections.unmodifiableList(_positions);
+        public Set<RingPosition> getPositions() {
+            return Collections.unmodifiableSet(_positions);
         }
 
         public String toString() {
             return "RingPosns: " + _generation + " => " + _positions;
+        }
+
+        public boolean equals(Object anObject) {
+            if (anObject instanceof RingPositions) {
+                RingPositions myPositions = (RingPositions) anObject;
+
+                return (Sets.symmetricDifference(_positions, myPositions._positions).size() == 0);
+            }
+
+            return false;
         }
     }
 
