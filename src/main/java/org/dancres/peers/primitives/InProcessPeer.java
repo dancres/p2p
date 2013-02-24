@@ -53,6 +53,10 @@ public class InProcessPeer implements Peer {
         return _timer;
     }
 
+    public void stop() {
+        _timer.cancel();
+    }
+
     public URI getURI() {
         return _fullAddress;
     }

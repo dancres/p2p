@@ -22,6 +22,10 @@ public class SingleProcessPeer implements Peer {
         throw new UnsupportedOperationException();
     }
 
+    public void stop() {
+        //To change body of implemented methods use File | Settings | File Templates.
+    }
+
     public String getAddress() {
         throw new UnsupportedOperationException();
     }

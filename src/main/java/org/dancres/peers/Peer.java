@@ -13,6 +13,8 @@ public interface Peer {
      */
     public URI getURI();
 
+    public void stop();
+
     /**
      * @return the URI at which this peer is rooted
      */
