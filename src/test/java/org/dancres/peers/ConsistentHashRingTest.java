@@ -86,6 +86,9 @@ public class ConsistentHashRingTest {
 
         Assert.assertEquals(1, myRing1.getCurrentRing().size());
         Assert.assertEquals(1, myRing2.getCurrentRing().size());
+
+        myPeer1.stop();
+        myPeer2.stop();
     }
 
     class RejectionCountingListenerImpl implements ConsistentHashRing.Listener {
@@ -185,6 +188,9 @@ public class ConsistentHashRingTest {
         //
         Assert.assertEquals(3, myRel.getOwned().getPosition().intValue());
         Assert.assertEquals(1, myRel.getNeighbour().getPosition().intValue());
+
+        myPeer1.stop();
+        myPeer2.stop();
     }
 
     class NeighbourCountingListenerImpl implements ConsistentHashRing.Listener {
