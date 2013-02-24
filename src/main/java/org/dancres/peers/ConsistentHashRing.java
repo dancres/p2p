@@ -54,9 +54,9 @@ public class ConsistentHashRing {
     private static final Logger _logger = LoggerFactory.getLogger(ConsistentHashRing.class);
 
     public static class RingPosition implements Comparable {
-        private String _peerName;
-        private Integer _position;
-        private long _birthDate;
+        private final String _peerName;
+        private final Integer _position;
+        private final long _birthDate;
 
         RingPosition(Peer aPeer, Integer aPosition) {
             this(aPeer, aPosition, System.currentTimeMillis());
@@ -156,8 +156,8 @@ public class ConsistentHashRing {
     }
 
     public static class NeighbourRelation {
-        private RingPosition _neighbour;
-        private RingPosition _owned;
+        private final RingPosition _neighbour;
+        private final RingPosition _owned;
 
         NeighbourRelation(RingPosition aNeighbour, RingPosition aLocal) {
             _neighbour = aNeighbour;
