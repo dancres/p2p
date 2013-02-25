@@ -230,6 +230,10 @@ public class ConsistentHashRing {
 
                 _logger.debug("New positions from new: " + aNewEntry.getPeerName(), myPeerPositions);
 
+                /*
+                 * Slightly naughty as there may be a more up to date version kicking around but that will get
+                 * worked out over time
+                 */
                 _ringPositions.put(aNewEntry.getPeerName(), myPeerPositions);
             }
 
@@ -243,15 +247,18 @@ public class ConsistentHashRing {
 
                 // Was the positions list updated?
                 //
-                if ((myPrevious == null) ||
-                        (myPeerPositions.supercedes(_ringPositions.get(anUpdatedEntry.getPeerName())))) {
+                if (myPrevious == null) {
+                    _logger.debug("New positions from: " + anUpdatedEntry.getPeerName(), myPeerPositions);
 
-                    if (myPrevious == null)
-                        _logger.debug("New positions from: " + anUpdatedEntry.getPeerName(), myPeerPositions);
-                    else
-                        _logger.debug("Updated positions from: " + anUpdatedEntry.getPeerName(), myPeerPositions);
-
+                    /*
+                     * Slightly naughty as there may be a more up to date version kicking around but that will get
+                     * worked out over time
+                     */
                     _ringPositions.put(anUpdatedEntry.getPeerName(), myPeerPositions);
+                } else {
+                    _logger.debug("Updated positions from: " + anUpdatedEntry.getPeerName(), myPeerPositions);
+
+                    _ringPositions.replace(anUpdatedEntry.getPeerName(), myPrevious, myPeerPositions);
                 }
             }
 
