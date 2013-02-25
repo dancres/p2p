@@ -378,7 +378,10 @@ public class ConsistentHashRing {
             }
         }
 
-        return new RingRebuild(myNewRing, new LinkedList<RingPosition>(myLocalRejections));
+        // JVM workaround for clear and addAll
+        // return new RingRebuild(myNewRing, new LinkedList<RingPosition>(myLocalRejections));
+
+        return new RingRebuild(myNewRing, myLocalRejections);
     }
 
     private static class NeighboursRebuild {
@@ -419,11 +422,13 @@ public class ConsistentHashRing {
          * JVM Workaround - if this result is not wrapped in a new hashset, the clearAll/addAll in
          * DirectoryListenerImpl.update will cause the changes set to be empty!
          */
-        Set<NeighbourRelation> myChanges =
-                 new HashSet<NeighbourRelation>(Sets.difference(myNeighbours, anOldNeighbours));
+        Set<NeighbourRelation> myChanges = Sets.difference(myNeighbours, anOldNeighbours);
 
         _logger.debug("Neighbour diff: " + myChanges + " " + myChanges.equals(myNeighbours) + " " +
                 myChanges.equals(anOldNeighbours));
+
+        // JVM workaround for clear and addAll
+        // return new NeighboursRebuild(myNeighbours, new HashSet<NeighbourRelation>(myChanges));
 
         return new NeighboursRebuild(myNeighbours, myChanges);
     }
