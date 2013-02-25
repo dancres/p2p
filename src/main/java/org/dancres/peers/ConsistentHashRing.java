@@ -286,34 +286,26 @@ public class ConsistentHashRing {
              * myNeighbourRebuild._neighbours is not empty. Another possibility is that a second final field in a simple
              * return object, as done with ring and neighbour computations, causes problems. Notably both methods
              * have required the same treatment to prevent loss of set contents and thus the latter seems more likely.
-             * Perhaps something to do with stack scope?
-             */
-            NeighboursRebuild myNeighbourRebuild =
-                    rebuildNeighbours(myRingRebuild._newRing.values(), _neighbours.get(), _peer);
+             * Perhaps something to do with stack scope/corruption?
 
-            /*
             _logger.debug(Thread.currentThread() + " " + this + " Rebuild: " + myNeighbourRebuild._neighbours +
                     " " + System.identityHashCode(myNeighbourRebuild._neighbours));
             _logger.debug(Thread.currentThread() + " " + this + " Changes before: " + myNeighbourRebuild._changes +
                     " " + System.identityHashCode(myNeighbourRebuild._changes));
             _logger.debug(Thread.currentThread() + " " + this + " Neighbours before: " + _neighbours +
                     " " + System.identityHashCode(_neighbours));
-             */
 
-            // _neighbours.clear();
+            _neighbours.clear();
 
-            /*
             _logger.debug(Thread.currentThread() + " " + this + " Rebuild after 1: " + myNeighbourRebuild._neighbours +
                     " " + System.identityHashCode(myNeighbourRebuild._neighbours));
             _logger.debug(Thread.currentThread() + " " + this + " Changes after 1: " + myNeighbourRebuild._changes +
                     " " + System.identityHashCode(myNeighbourRebuild._changes));
             _logger.debug(Thread.currentThread() + " " + this + " Neighbours after 1: " + _neighbours +
                     " " + System.identityHashCode(_neighbours));
-             */
 
-            // _neighbours.addAll(myNeighbourRebuild._neighbours);
+            _neighbours.addAll(myNeighbourRebuild._neighbours);
 
-            /*
             _logger.debug(Thread.currentThread() + " " + this + " Rebuild after 2: " + myNeighbourRebuild._neighbours +
                     " " + System.identityHashCode(myNeighbourRebuild._neighbours));
             _logger.debug(Thread.currentThread() + " " + this + " Changes after 2: " + myNeighbourRebuild._changes +
@@ -321,6 +313,9 @@ public class ConsistentHashRing {
             _logger.debug(Thread.currentThread() + " " + this + " Neighbours after 2: " + _neighbours +
                     " " + System.identityHashCode(_neighbours));
              */
+
+            NeighboursRebuild myNeighbourRebuild =
+                    rebuildNeighbours(myRingRebuild._newRing.values(), _neighbours.get(), _peer);
 
             _neighbours.set(myNeighbourRebuild._neighbours);
 
