@@ -115,7 +115,8 @@ public class ConsistentHashRing {
             if (anObject instanceof RingPositions) {
                 RingPositions myPositions = (RingPositions) anObject;
 
-                return (Sets.symmetricDifference(_positions, myPositions._positions).size() == 0);
+                return ((_generation.equals(myPositions._generation)) &&
+                        (Sets.symmetricDifference(_positions, myPositions._positions).size() == 0));
             }
 
             return false;
@@ -256,9 +257,11 @@ public class ConsistentHashRing {
                      */
                     _ringPositions.put(anUpdatedEntry.getPeerName(), myPeerPositions);
                 } else {
-                    _logger.debug("Updated positions from: " + anUpdatedEntry.getPeerName(), myPeerPositions);
+                    if (myPeerPositions.supercedes(myPrevious)) {
+                        _logger.debug("Updated positions from: " + anUpdatedEntry.getPeerName(), myPeerPositions);
 
-                    _ringPositions.replace(anUpdatedEntry.getPeerName(), myPrevious, myPeerPositions);
+                        _ringPositions.replace(anUpdatedEntry.getPeerName(), myPrevious, myPeerPositions);
+                    }
                 }
             }
 
