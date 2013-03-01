@@ -30,7 +30,7 @@ public class InProcessPeerTest {
 
         Peer.ServiceDispatcher myDispatcher = new Dispatcher();
 
-        myPeer1.add("/test", myDispatcher);
+        myPeer1.add(new TestImpl());
 
         try {
             myClient.prepareGet(myPeer1.getAddress().toString() + "/test").execute(
@@ -51,6 +51,17 @@ public class InProcessPeerTest {
         Thread.sleep(1000);
 
         Assert.assertTrue(_success);
+    }
+
+    class TestImpl implements Peer.Service {
+
+        public String getAddress() {
+            return "/test";
+        }
+
+        public Peer.ServiceDispatcher getDispatcher() {
+            return new Dispatcher();
+        }
     }
 
     class Dispatcher implements Peer.ServiceDispatcher {

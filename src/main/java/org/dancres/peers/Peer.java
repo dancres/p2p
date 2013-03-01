@@ -22,17 +22,17 @@ public interface Peer {
 
     /**
      * Add a service to this peer
-     *
-     * @param aService is the address of the service beginning with a "/" which can be accessed relative to the URI
-     *                 from <code>getAddress()</code>
-     *
-     * @param aDispatcher is the dispatcher that will handle requests for this service.
      */
-    public void add(String aService, ServiceDispatcher aDispatcher);
+    public void add(Service aService);
 
     public Timer getTimer();
 
     public AsyncHttpClient getClient();
+
+    public interface Service {
+        String getAddress();
+        ServiceDispatcher getDispatcher();
+    }
 
     public interface ServiceDispatcher {
         /**

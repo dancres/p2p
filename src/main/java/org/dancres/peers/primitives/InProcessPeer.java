@@ -7,9 +7,9 @@ import org.jboss.netty.handler.codec.http.HttpResponse;
 import org.jboss.netty.util.internal.ConcurrentWeakKeyHashMap;
 
 import java.net.URI;
-import java.util.Map;
-import java.util.Timer;
+import java.util.*;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * InProcessPeer shares a single address and port with a number of other InProcessPeers (e.g. By sharing a single
@@ -69,14 +69,8 @@ public class InProcessPeer implements Peer {
         return _client;
     }
 
-    /**
-     * @param aService is the address of the service beginning with a "/" which can be accessed relative to the URI
-     *                 from <code>getAddress()</code>
-     *
-     * @param aDispatcher is the dispatcher that will handle requests for this service.
-     */
-    public void add(String aService, ServiceDispatcher aDispatcher) {
-        if (_dispatchers.putIfAbsent(aService, aDispatcher) != null)
+    public void add(Service aService) {
+        if (_dispatchers.putIfAbsent(aService.getAddress(), aService.getDispatcher()) != null)
             throw new IllegalStateException("Already got a dispatcher rooted at: " + aService);
     }
 }

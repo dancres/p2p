@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * @todo Add support for dead node elimination
  */
-public class Directory {
+public class Directory implements Peer.Service {
     private static final Logger _logger = LoggerFactory.getLogger(Directory.class);
     private final PeerSet _peers;
     private final Peer _peer;
@@ -46,6 +46,14 @@ public class Directory {
             return myDaemon;
         }
     });
+
+    public String getAddress() {
+        return "/directory";
+    }
+
+    public Peer.ServiceDispatcher getDispatcher() {
+        return _dispatcher;
+    }
 
     public static class Entry {
         private final String _peerName;
@@ -104,7 +112,7 @@ public class Directory {
         _peers = aPeerSet;
         _peer = aPeer;
         _dispatcher = new Dispatcher();
-        _peer.add("/directory", _dispatcher);
+        _peer.add(this);
     }
 
     /**

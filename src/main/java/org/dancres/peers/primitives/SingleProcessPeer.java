@@ -30,7 +30,7 @@ public class SingleProcessPeer implements Peer {
         throw new UnsupportedOperationException();
     }
 
-    public void add(String aService, ServiceDispatcher aDispatcher) {
+    public void add(Service aService) {
         throw new UnsupportedOperationException();
     }
 }
