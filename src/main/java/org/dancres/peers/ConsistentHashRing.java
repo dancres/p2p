@@ -175,9 +175,13 @@ public class ConsistentHashRing {
     private final AtomicReference<HashSet<NeighbourRelation>> _neighbours =
             new AtomicReference<HashSet<NeighbourRelation>>(new HashSet<NeighbourRelation>());
 
-    public ConsistentHashRing(Peer aPeer, Directory aDirectory) {
+    public ConsistentHashRing(Peer aPeer) {
         _peer = aPeer;
-        _dir = aDirectory;
+        _dir = (Directory) aPeer.find(Directory.class);
+
+        if (_dir == null)
+            throw new RuntimeException("ConsistentHashRing couldn't locate a Directory service in peer");
+
         _ringPositions.put(_peer.getAddress(), new RingPositions());
 
         _dir.add(new AttrProducerImpl());

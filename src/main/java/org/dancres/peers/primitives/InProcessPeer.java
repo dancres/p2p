@@ -8,6 +8,7 @@ import org.jboss.netty.util.internal.ConcurrentWeakKeyHashMap;
 
 import java.net.URI;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -21,6 +22,7 @@ public class InProcessPeer implements Peer {
     private final Timer _timer;
     private final ConcurrentMap<String, ServiceDispatcher> _dispatchers =
             new ConcurrentWeakKeyHashMap<String, ServiceDispatcher>();
+    private final ConcurrentMap<Class, Service> _services = new ConcurrentHashMap<Class, Service>();
     private final URI _fullAddress;
 
     /**
@@ -69,8 +71,14 @@ public class InProcessPeer implements Peer {
         return _client;
     }
 
+    public Service find(Class aServiceClass) {
+        return _services.get(aServiceClass);
+    }
+
     public void add(Service aService) {
         if (_dispatchers.putIfAbsent(aService.getAddress(), aService.getDispatcher()) != null)
             throw new IllegalStateException("Already got a dispatcher rooted at: " + aService);
+
+        _services.put(aService.getClass(), aService);
     }
 }

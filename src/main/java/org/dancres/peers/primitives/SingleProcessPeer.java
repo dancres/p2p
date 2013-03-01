@@ -30,6 +30,10 @@ public class SingleProcessPeer implements Peer {
         throw new UnsupportedOperationException();
     }
 
+    public Service find(Class aServiceClass) {
+        throw new UnsupportedOperationException();
+    }
+
     public void add(Service aService) {
         throw new UnsupportedOperationException();
     }

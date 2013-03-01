@@ -49,8 +49,8 @@ public class ConsistentHashRingTest {
         Assert.assertEquals(2, myPeer1Dir.getDirectory().size());
         Assert.assertEquals(2, myPeer2Dir.getDirectory().size());
 
-        ConsistentHashRing myRing1 = new ConsistentHashRing(myPeer1, myPeer1Dir);
-        ConsistentHashRing myRing2 = new ConsistentHashRing(myPeer2, myPeer2Dir);
+        ConsistentHashRing myRing1 = new ConsistentHashRing(myPeer1);
+        ConsistentHashRing myRing2 = new ConsistentHashRing(myPeer2);
 
         myRing1.insertPosition(new ConsistentHashRing.RingPosition(myPeer1, 1, System.currentTimeMillis()));
 
@@ -140,8 +140,8 @@ public class ConsistentHashRingTest {
         Assert.assertEquals(2, myPeer1Dir.getDirectory().size());
         Assert.assertEquals(2, myPeer2Dir.getDirectory().size());
 
-        ConsistentHashRing myRing1 = new ConsistentHashRing(myPeer1, myPeer1Dir);
-        ConsistentHashRing myRing2 = new ConsistentHashRing(myPeer2, myPeer2Dir);
+        ConsistentHashRing myRing1 = new ConsistentHashRing(myPeer1);
+        ConsistentHashRing myRing2 = new ConsistentHashRing(myPeer2);
 
         AtomicInteger myPeer1NeighbourCount = new AtomicInteger(0);
         AtomicInteger myPeer2NeighbourCount = new AtomicInteger(0);

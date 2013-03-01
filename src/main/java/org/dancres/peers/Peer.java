@@ -20,6 +20,8 @@ public interface Peer {
      */
     public String getAddress();
 
+    public Service find(Class aServiceClass);
+
     /**
      * Add a service to this peer
      */
