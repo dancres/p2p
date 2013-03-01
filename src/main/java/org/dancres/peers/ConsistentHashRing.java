@@ -361,22 +361,28 @@ public class ConsistentHashRing {
                 if (myConflict == null) {
                     myNewRing.put(myRingPosn.getPosition(), myRingPosn);
                 } else {
+                    RingPosition myLoser;
+
                     _logger.debug("Got position conflict: " + myConflict + ", " + myRingPosn);
 
                     if (myConflict.bounces(myRingPosn)) {
                         _logger.debug("Loser in conflict (new posn): " + myRingPosn);
 
-                        // Are we the losing peer?
-                        //
-                        if (myRingPosn.isLocal(_peer)) {
-                            _logger.debug("We are the losing peer");
+                        myLoser = myRingPosn;
 
-                            myLocalRejections.add(myRingPosn);
-                        }
                     } else {
                         _logger.debug("Loser in conflict (conflict): " + myConflict);
 
+                        myLoser = myConflict;
                         myNewRing.put(myRingPosn.getPosition(), myRingPosn);
+                    }
+
+                    // Are we the losing peer?
+                    //
+                    if (myLoser.isLocal(_peer)) {
+                        _logger.debug("We are the losing peer");
+
+                        myLocalRejections.add(myLoser);
                     }
                 }
             }
