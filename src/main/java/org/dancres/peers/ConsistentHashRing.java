@@ -397,9 +397,6 @@ public class ConsistentHashRing {
     private NeighboursRebuild rebuildNeighbours(Collection<RingPosition> aRing,
                                                          HashSet<NeighbourRelation> anOldNeighbours,
                                                          Peer aLocal) {
-        // Note that if the old neighbour's position was higher than the new, there is no need to report a change
-        // because nothing would need moving but perhaps we leave that smart to the upper layers?
-        //
         HashSet<NeighbourRelation> myNeighbours = new HashSet<NeighbourRelation>();
         SortedSet<RingPosition> myRing = new TreeSet<RingPosition>(aRing);
         RingPosition myLast = myRing.last();
