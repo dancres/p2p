@@ -18,6 +18,16 @@ public class ConsistentHashRing {
 
     private static final Logger _logger = LoggerFactory.getLogger(ConsistentHashRing.class);
 
+    private static class Packager {
+        String flattenRingPositions(RingPositions aPositions) {
+            return new Gson().toJson(aPositions);
+        }
+
+        RingPositions extractRingPositions(Directory.Entry anEntry) {
+            return new Gson().fromJson(anEntry.getAttributes().get(RING_MEMBERSHIP), RingPositions.class);
+        }
+    }
+
     public static class RingPosition implements Comparable {
         private final String _peerName;
         private final Integer _position;
@@ -175,6 +185,8 @@ public class ConsistentHashRing {
     private final AtomicReference<HashSet<NeighbourRelation>> _neighbours =
             new AtomicReference<HashSet<NeighbourRelation>>(new HashSet<NeighbourRelation>());
 
+    private final Packager _packager = new Packager();
+
     public ConsistentHashRing(Peer aPeer) {
         _peer = aPeer;
         _dir = (Directory) aPeer.find(Directory.class);
@@ -192,18 +204,11 @@ public class ConsistentHashRing {
         public Map<String, String> produce() {
             Map<String, String> myFlattenedRingPosns = new HashMap<String, String>();
 
-            myFlattenedRingPosns.put(RING_MEMBERSHIP, flattenRingPositions(_ringPositions.get(_peer.getAddress())));
+            myFlattenedRingPosns.put(RING_MEMBERSHIP,
+                    _packager.flattenRingPositions(_ringPositions.get(_peer.getAddress())));
 
             return myFlattenedRingPosns;
         }
-    }
-
-    private String flattenRingPositions(RingPositions aPositions) {
-        return new Gson().toJson(aPositions);
-    }
-
-    private RingPositions extractRingPositions(Directory.Entry anEntry) {
-        return new Gson().fromJson(anEntry.getAttributes().get(RING_MEMBERSHIP), RingPositions.class);
     }
 
     private class DirListenerImpl implements Directory.Listener {
@@ -231,7 +236,7 @@ public class ConsistentHashRing {
                     return entry.getAttributes().containsKey(RING_MEMBERSHIP);
                 }
             })) {
-                RingPositions myPeerPositions = extractRingPositions(aNewEntry);
+                RingPositions myPeerPositions = _packager.extractRingPositions(aNewEntry);
 
                 _logger.debug("New positions from new: " + aNewEntry.getPeerName(), myPeerPositions);
 
@@ -247,7 +252,7 @@ public class ConsistentHashRing {
                     return entry.getAttributes().containsKey(RING_MEMBERSHIP);
                 }
             })) {
-                RingPositions myPeerPositions = extractRingPositions(anUpdatedEntry);
+                RingPositions myPeerPositions = _packager.extractRingPositions(anUpdatedEntry);
                 RingPositions myPrevious = _ringPositions.get(anUpdatedEntry.getPeerName());
 
                 // Was the positions list updated?
