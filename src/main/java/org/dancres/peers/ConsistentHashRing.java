@@ -199,7 +199,7 @@ public class ConsistentHashRing {
     }
 
     private String flattenRingPositions(RingPositions aPositions) {
-        return new Gson().toJson(_ringPositions.get(_peer.getAddress()));
+        return new Gson().toJson(aPositions);
     }
 
     private RingPositions extractRingPositions(Directory.Entry anEntry) {
