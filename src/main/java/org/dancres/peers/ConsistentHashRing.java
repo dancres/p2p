@@ -1,5 +1,6 @@
 package org.dancres.peers;
 
+import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -9,7 +10,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import com.google.gson.Gson;
+import com.google.gson.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,8 +19,37 @@ public class ConsistentHashRing {
 
     private static final Logger _logger = LoggerFactory.getLogger(ConsistentHashRing.class);
 
+    private static class RingPositionSerializer implements JsonSerializer<RingPosition> {
+        public JsonElement serialize(RingPosition ringPosition, Type type,
+                                     JsonSerializationContext jsonSerializationContext) {
+            JsonArray myArray = new JsonArray();
+
+            myArray.add(new JsonPrimitive(ringPosition._peerName));
+            myArray.add(new JsonPrimitive(ringPosition._position));
+            myArray.add(new JsonPrimitive(ringPosition._birthDate));
+
+            return myArray;
+        }
+    }
+
+    private static class RingPositionDeserializer implements JsonDeserializer<RingPosition> {
+        public RingPosition deserialize(JsonElement jsonElement, Type type,
+                                        JsonDeserializationContext jsonDeserializationContext)
+                throws JsonParseException {
+            JsonArray myArray = jsonElement.getAsJsonArray();
+
+            return new RingPosition(myArray.get(0).getAsString(), myArray.get(1).getAsInt(),
+                    myArray.get(2).getAsLong());
+        }
+    }
+
     private static class Packager {
-        private final Gson _gson = new Gson();
+        private final Gson _gson;
+
+        Packager() {
+            _gson = new GsonBuilder().registerTypeAdapter(RingPosition.class, new RingPositionSerializer()).
+                    registerTypeAdapter(RingPosition.class, new RingPositionDeserializer()).create();
+        }
 
         String flattenRingPositions(RingPositions aPositions) {
             return _gson.toJson(aPositions);
@@ -41,6 +71,12 @@ public class ConsistentHashRing {
 
         RingPosition(Peer aPeer, Integer aPosition, long aBirthDate) {
             _peerName = aPeer.getAddress();
+            _position = aPosition;
+            _birthDate = aBirthDate;
+        }
+
+        RingPosition(String aPeerAddr, Integer aPosition, long aBirthDate) {
+            _peerName = aPeerAddr;
             _position = aPosition;
             _birthDate = aBirthDate;
         }
