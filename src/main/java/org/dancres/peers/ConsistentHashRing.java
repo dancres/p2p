@@ -19,12 +19,14 @@ public class ConsistentHashRing {
     private static final Logger _logger = LoggerFactory.getLogger(ConsistentHashRing.class);
 
     private static class Packager {
+        private final Gson _gson = new Gson();
+
         String flattenRingPositions(RingPositions aPositions) {
-            return new Gson().toJson(aPositions);
+            return _gson.toJson(aPositions);
         }
 
         RingPositions extractRingPositions(Directory.Entry anEntry) {
-            return new Gson().fromJson(anEntry.getAttributes().get(RING_MEMBERSHIP), RingPositions.class);
+            return _gson.fromJson(anEntry.getAttributes().get(RING_MEMBERSHIP), RingPositions.class);
         }
     }
 
