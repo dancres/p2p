@@ -175,8 +175,8 @@ public class ConsistentHashRingTest {
 
         // In ring 1, owns position 1, neighbour should be 3
         //
-        Assert.assertEquals(1, myRel.getOwned().getPosition().intValue());
-        Assert.assertEquals(3, myRel.getNeighbour().getPosition().intValue());
+        Assert.assertEquals(1, myRel.getOwned().getPosition());
+        Assert.assertEquals(3, myRel.getNeighbour().getPosition());
 
         myRels = myRing2.getNeighbours();
 
@@ -186,8 +186,8 @@ public class ConsistentHashRingTest {
 
         // In ring 2, owns position 3, neighbour should be 1
         //
-        Assert.assertEquals(3, myRel.getOwned().getPosition().intValue());
-        Assert.assertEquals(1, myRel.getNeighbour().getPosition().intValue());
+        Assert.assertEquals(3, myRel.getOwned().getPosition());
+        Assert.assertEquals(1, myRel.getNeighbour().getPosition());
 
         myPeer1.stop();
         myPeer2.stop();

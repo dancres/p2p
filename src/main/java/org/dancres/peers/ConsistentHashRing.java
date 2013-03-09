@@ -19,31 +19,40 @@ public class ConsistentHashRing {
 
     private static final Logger _logger = LoggerFactory.getLogger(ConsistentHashRing.class);
 
-    private static class RingPositionSerializer implements JsonSerializer<RingPosition> {
+    public static interface PositionGenerator {
+        public Comparable newId();
+    }
+
+    public static interface PositionPacker {
+        public Comparable unpack(String aPacked);
+        public String pack(Comparable anId);
+    }
+
+    private class RingPositionSerializer implements JsonSerializer<RingPosition> {
         public JsonElement serialize(RingPosition ringPosition, Type type,
                                      JsonSerializationContext jsonSerializationContext) {
             JsonArray myArray = new JsonArray();
 
             myArray.add(new JsonPrimitive(ringPosition._peerName));
-            myArray.add(new JsonPrimitive(ringPosition._position));
+            myArray.add(new JsonPrimitive(_positionPacker.pack(ringPosition._position)));
             myArray.add(new JsonPrimitive(ringPosition._birthDate));
 
             return myArray;
         }
     }
 
-    private static class RingPositionDeserializer implements JsonDeserializer<RingPosition> {
+    private class RingPositionDeserializer implements JsonDeserializer<RingPosition> {
         public RingPosition deserialize(JsonElement jsonElement, Type type,
                                         JsonDeserializationContext jsonDeserializationContext)
                 throws JsonParseException {
             JsonArray myArray = jsonElement.getAsJsonArray();
 
-            return new RingPosition(myArray.get(0).getAsString(), myArray.get(1).getAsInt(),
+            return new RingPosition(myArray.get(0).getAsString(), _positionPacker.unpack(myArray.get(1).getAsString()),
                     myArray.get(2).getAsLong());
         }
     }
 
-    private static class Packager {
+    private class Packager {
         private final Gson _gson;
 
         Packager() {
@@ -62,26 +71,27 @@ public class ConsistentHashRing {
 
     public static class RingPosition implements Comparable {
         private final String _peerName;
-        private final Integer _position;
+        private final Comparable _position;
         private final long _birthDate;
 
-        RingPosition(Peer aPeer, Integer aPosition) {
+        RingPosition(Peer aPeer, Comparable aPosition) {
             this(aPeer, aPosition, System.currentTimeMillis());
         }
 
-        RingPosition(Peer aPeer, Integer aPosition, long aBirthDate) {
-            _peerName = aPeer.getAddress();
-            _position = aPosition;
-            _birthDate = aBirthDate;
+        RingPosition(Peer aPeer, Comparable aPosition, long aBirthDate) {
+            this(aPeer.getAddress(), aPosition, aBirthDate);
         }
 
-        RingPosition(String aPeerAddr, Integer aPosition, long aBirthDate) {
+        RingPosition(String aPeerAddr, Comparable aPosition, long aBirthDate) {
+            if (aPosition == null)
+                throw new IllegalArgumentException();
+
             _peerName = aPeerAddr;
             _position = aPosition;
             _birthDate = aBirthDate;
         }
 
-        public Integer getPosition() {
+        public Comparable getPosition() {
             return _position;
         }
 
@@ -96,11 +106,14 @@ public class ConsistentHashRing {
         public int compareTo(Object anObject) {
             RingPosition myOther = (RingPosition) anObject;
 
-            return (_position - myOther._position);
+            return (_position.compareTo(myOther._position));
         }
 
         public int hashCode() {
-            return _peerName.hashCode() ^ _position.hashCode();
+            int myFirst = _peerName.hashCode();
+            int mySecond = _position.hashCode();
+
+            return myFirst ^ mySecond;
         }
 
         public boolean equals(Object anObject) {
@@ -119,7 +132,7 @@ public class ConsistentHashRing {
         }
     }
 
-    public static class RingPositions {
+    static class RingPositions {
         private final Long _generation;
         private final Set<RingPosition> _positions;
 
@@ -128,7 +141,7 @@ public class ConsistentHashRing {
             _positions = new HashSet<RingPosition>();
         }
 
-        public RingPositions(long aGeneration, HashSet<RingPosition> aPositions) {
+        RingPositions(long aGeneration, HashSet<RingPosition> aPositions) {
             _generation = aGeneration;
             _positions = aPositions;
         }
@@ -151,7 +164,7 @@ public class ConsistentHashRing {
             return new RingPositions(_generation + 1, myPositions);
         }
 
-        public Set<RingPosition> getPositions() {
+        Set<RingPosition> getPositions() {
             return Collections.unmodifiableSet(_positions);
         }
 
@@ -209,7 +222,6 @@ public class ConsistentHashRing {
 
     private final Peer _peer;
     private final Directory _dir;
-    private final Random _rng = new Random();
     private final List<Listener> _listeners = new CopyOnWriteArrayList<Listener>();
 
     /**
@@ -224,9 +236,19 @@ public class ConsistentHashRing {
             new AtomicReference<HashSet<NeighbourRelation>>(new HashSet<NeighbourRelation>());
 
     private final Packager _packager = new Packager();
+    private final PositionGenerator _positionGenerator;
+    private final PositionPacker _positionPacker;
 
-    public ConsistentHashRing(Peer aPeer) {
+    public ConsistentHashRing(Peer aPeer, PositionGenerator aGenerator, PositionPacker aPacker) {
+        if (aGenerator == null)
+            throw new IllegalArgumentException("Generator cannot be null");
+
+        if (aPacker == null)
+            throw new IllegalArgumentException("Packer cannot be null");
+
         _peer = aPeer;
+        _positionGenerator = aGenerator;
+        _positionPacker = aPacker;
         _dir = (Directory) aPeer.find(Directory.class);
 
         if (_dir == null)
@@ -236,6 +258,28 @@ public class ConsistentHashRing {
 
         _dir.add(new AttrProducerImpl());
         _dir.add(new DirListenerImpl());
+    }
+
+    public ConsistentHashRing(Peer aPeer) {
+        this(aPeer,
+                new PositionGenerator() {
+                    private Random _rng = new Random();
+
+                    public Comparable newId() {
+                        return _rng.nextInt();
+                    }
+                },
+
+                new PositionPacker() {
+                    public Comparable unpack(String aPacked) {
+                        return Integer.parseInt(aPacked);
+                    }
+
+                    public String pack(Comparable anId) {
+                        return anId.toString();
+                    }
+                }
+        );
     }
 
     private class AttrProducerImpl implements Directory.AttributeProducer {
@@ -377,10 +421,10 @@ public class ConsistentHashRing {
     }
 
     private static class RingRebuild {
-        final Map<Integer, RingPosition> _newRing;
+        final Map<Comparable, RingPosition> _newRing;
         final List<RingPosition> _rejected;
 
-        RingRebuild(Map<Integer, RingPosition> aNewRing, List<RingPosition> aRejected) {
+        RingRebuild(Map<Comparable, RingPosition> aNewRing, List<RingPosition> aRejected) {
             _newRing = aNewRing;
             _rejected = aRejected;
         }
@@ -394,7 +438,7 @@ public class ConsistentHashRing {
          * Doing collision resolution as we go. In the case where one of our positions is the loser, remove it
          * and report it to listeners.
          */
-        Map<Integer, RingPosition> myNewRing = new HashMap<Integer, RingPosition>();
+        Map<Comparable, RingPosition> myNewRing = new HashMap<Comparable, RingPosition>();
         List<RingPosition> myLocalRejections = new LinkedList<RingPosition>();
 
         for (RingPositions myRingPositions : aRingPositions.values()) {
@@ -505,16 +549,16 @@ public class ConsistentHashRing {
     public RingPosition newPosition() {
         // Simply flatten _ringPositions to get a view of current ring, don't care about peers or collision detection
         //
-        HashSet<Integer> myOccupiedPositions = new HashSet<Integer>();
+        HashSet<Comparable> myOccupiedPositions = new HashSet<Comparable>();
 
         for (RingPositions myRPs : _ringPositions.values())
             for (RingPosition myRP : myRPs.getPositions())
                 myOccupiedPositions.add(myRP.getPosition());
 
-        int myNewPos;
+        Comparable myNewPos;
 
         do {
-            myNewPos = _rng.nextInt();
+            myNewPos = _positionGenerator.newId();
         } while (myOccupiedPositions.contains(myNewPos));
 
         return insertPosition(new RingPosition(_peer, myNewPos));
