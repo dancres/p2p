@@ -1,11 +1,15 @@
-package org.dancres.peers;
+package org.dancres.peers.ring;
 
 import com.ning.http.client.AsyncHttpClient;
 import junit.framework.Assert;
+import org.dancres.peers.Directory;
+import org.dancres.peers.Peer;
+import org.dancres.peers.PeerSet;
 import org.dancres.peers.primitives.GossipBarrier;
 import org.dancres.peers.primitives.HttpServer;
 import org.dancres.peers.primitives.InProcessPeer;
 import org.dancres.peers.primitives.StaticPeerSet;
+import org.dancres.peers.ring.ConsistentHashRing;
 import org.junit.Test;
 
 import java.net.InetSocketAddress;

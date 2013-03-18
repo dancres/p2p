@@ -1,4 +1,4 @@
-package org.dancres.peers;
+package org.dancres.peers.ring;
 
 import java.lang.reflect.Type;
 import java.util.*;
@@ -11,6 +11,8 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.google.gson.*;
+import org.dancres.peers.Directory;
+import org.dancres.peers.Peer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -574,7 +576,7 @@ public class ConsistentHashRing {
      * @param aHashCode
      * @return
      */
-    public RingPosition allocate(Integer aHashCode) {
+    public RingPosition allocate(Comparable aHashCode) {
         throw new UnsupportedOperationException();
     }
 
