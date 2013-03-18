@@ -9,7 +9,6 @@ import org.dancres.peers.primitives.GossipBarrier;
 import org.dancres.peers.primitives.HttpServer;
 import org.dancres.peers.primitives.InProcessPeer;
 import org.dancres.peers.primitives.StaticPeerSet;
-import org.dancres.peers.ring.ConsistentHashRing;
 import org.junit.Test;
 
 import java.net.InetSocketAddress;
@@ -19,7 +18,7 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class ConsistentHashRingTest {
+public class ConsistentHashTest {
     @Test
     public void testListenerReject() throws Exception {
         HttpServer myServer = new HttpServer(new InetSocketAddress("localhost", 8081));
@@ -53,10 +52,10 @@ public class ConsistentHashRingTest {
         Assert.assertEquals(2, myPeer1Dir.getDirectory().size());
         Assert.assertEquals(2, myPeer2Dir.getDirectory().size());
 
-        ConsistentHashRing myRing1 = new ConsistentHashRing(myPeer1);
-        ConsistentHashRing myRing2 = new ConsistentHashRing(myPeer2);
+        ConsistentHash myRing1 = new ConsistentHash(myPeer1);
+        ConsistentHash myRing2 = new ConsistentHash(myPeer2);
 
-        myRing1.insertPosition(new ConsistentHashRing.RingPosition(myPeer1, 1, System.currentTimeMillis()));
+        myRing1.insertPosition(new ConsistentHash.RingPosition(myPeer1, 1, System.currentTimeMillis()));
 
         // Allow some gossip time so that this ring position has "taken" across the cluster of peers
         //
@@ -71,7 +70,7 @@ public class ConsistentHashRingTest {
 
         myRing1.add(new RejectionCountingListenerImpl(myPeer1RejectCount));
         myRing2.add(new RejectionCountingListenerImpl(myPeer2RejectCount));
-        myRing2.insertPosition(new ConsistentHashRing.RingPosition(myPeer2, 1, System.currentTimeMillis()));
+        myRing2.insertPosition(new ConsistentHash.RingPosition(myPeer2, 1, System.currentTimeMillis()));
 
         // Ring 2 contains a conflicting, newer position which when propagated should cause collisions in peer1
         // and peer2. Peer1 should be silent, Peer2 should complain
@@ -95,18 +94,18 @@ public class ConsistentHashRingTest {
         myPeer2.stop();
     }
 
-    class RejectionCountingListenerImpl implements ConsistentHashRing.Listener {
+    class RejectionCountingListenerImpl implements ConsistentHash.Listener {
         private AtomicInteger _count;
 
         RejectionCountingListenerImpl(AtomicInteger aCount) {
             _count = aCount;
         }
 
-        public void newNeighbour(ConsistentHashRing.RingPosition anOwnedPosition,
-                                 ConsistentHashRing.RingPosition aNeighbourPosition) {
+        public void newNeighbour(ConsistentHash.RingPosition anOwnedPosition,
+                                 ConsistentHash.RingPosition aNeighbourPosition) {
         }
 
-        public void rejected(ConsistentHashRing.RingPosition anOwnedPosition) {
+        public void rejected(ConsistentHash.RingPosition anOwnedPosition) {
             _count.incrementAndGet();
         }
     }
@@ -144,8 +143,8 @@ public class ConsistentHashRingTest {
         Assert.assertEquals(2, myPeer1Dir.getDirectory().size());
         Assert.assertEquals(2, myPeer2Dir.getDirectory().size());
 
-        ConsistentHashRing myRing1 = new ConsistentHashRing(myPeer1);
-        ConsistentHashRing myRing2 = new ConsistentHashRing(myPeer2);
+        ConsistentHash myRing1 = new ConsistentHash(myPeer1);
+        ConsistentHash myRing2 = new ConsistentHash(myPeer2);
 
         AtomicInteger myPeer1NeighbourCount = new AtomicInteger(0);
         AtomicInteger myPeer2NeighbourCount = new AtomicInteger(0);
@@ -153,8 +152,8 @@ public class ConsistentHashRingTest {
         myRing1.add(new NeighbourCountingListenerImpl(myPeer1NeighbourCount));
         myRing2.add(new NeighbourCountingListenerImpl(myPeer2NeighbourCount));
 
-        myRing1.insertPosition(new ConsistentHashRing.RingPosition(myPeer1, 1, System.currentTimeMillis()));
-        myRing2.insertPosition(new ConsistentHashRing.RingPosition(myPeer2, 3, System.currentTimeMillis()));
+        myRing1.insertPosition(new ConsistentHash.RingPosition(myPeer1, 1, System.currentTimeMillis()));
+        myRing2.insertPosition(new ConsistentHash.RingPosition(myPeer2, 3, System.currentTimeMillis()));
 
         // Allow some gossip time so that this ring position has "taken" across the cluster of peers
         // Have to wait a couple of cycles because neighbour processing might lag a little behind our discovery
@@ -171,11 +170,11 @@ public class ConsistentHashRingTest {
         Assert.assertEquals(2, myRing1.getCurrentRing().size());
         Assert.assertEquals(2, myRing2.getCurrentRing().size());
 
-        Set<ConsistentHashRing.NeighbourRelation> myRels = myRing1.getNeighbours();
+        Set<ConsistentHash.NeighbourRelation> myRels = myRing1.getNeighbours();
 
         Assert.assertEquals(1, myRels.size());
 
-        ConsistentHashRing.NeighbourRelation myRel = myRels.iterator().next();
+        ConsistentHash.NeighbourRelation myRel = myRels.iterator().next();
 
         // In ring 1, owns position 1, neighbour should be 3
         //
@@ -197,19 +196,19 @@ public class ConsistentHashRingTest {
         myPeer2.stop();
     }
 
-    class NeighbourCountingListenerImpl implements ConsistentHashRing.Listener {
+    class NeighbourCountingListenerImpl implements ConsistentHash.Listener {
         private AtomicInteger _count;
 
         NeighbourCountingListenerImpl(AtomicInteger aCount) {
             _count = aCount;
         }
 
-        public void newNeighbour(ConsistentHashRing.RingPosition anOwnedPosition,
-                                 ConsistentHashRing.RingPosition aNeighbourPosition) {
+        public void newNeighbour(ConsistentHash.RingPosition anOwnedPosition,
+                                 ConsistentHash.RingPosition aNeighbourPosition) {
             _count.incrementAndGet();
         }
 
-        public void rejected(ConsistentHashRing.RingPosition anOwnedPosition) {
+        public void rejected(ConsistentHash.RingPosition anOwnedPosition) {
         }
     }
 }

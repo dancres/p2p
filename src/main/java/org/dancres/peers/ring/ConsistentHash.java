@@ -16,10 +16,10 @@ import org.dancres.peers.Peer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ConsistentHashRing {
+public class ConsistentHash {
     private static final String RING_MEMBERSHIP = "org.dancres.peers.consistentHashRing.ringMembership";
 
-    private static final Logger _logger = LoggerFactory.getLogger(ConsistentHashRing.class);
+    private static final Logger _logger = LoggerFactory.getLogger(ConsistentHash.class);
 
     public static interface PositionGenerator {
         public Comparable newId();
@@ -241,7 +241,7 @@ public class ConsistentHashRing {
     private final PositionGenerator _positionGenerator;
     private final PositionPacker _positionPacker;
 
-    public ConsistentHashRing(Peer aPeer, PositionGenerator aGenerator, PositionPacker aPacker) {
+    public ConsistentHash(Peer aPeer, PositionGenerator aGenerator, PositionPacker aPacker) {
         if (aGenerator == null)
             throw new IllegalArgumentException("Generator cannot be null");
 
@@ -254,7 +254,7 @@ public class ConsistentHashRing {
         _dir = (Directory) aPeer.find(Directory.class);
 
         if (_dir == null)
-            throw new RuntimeException("ConsistentHashRing couldn't locate a Directory service in peer");
+            throw new RuntimeException("ConsistentHash couldn't locate a Directory service in peer");
 
         _ringPositions.put(_peer.getAddress(), new RingPositions());
 
@@ -262,7 +262,7 @@ public class ConsistentHashRing {
         _dir.add(new DirListenerImpl());
     }
 
-    public ConsistentHashRing(Peer aPeer) {
+    public ConsistentHash(Peer aPeer) {
         this(aPeer,
                 new PositionGenerator() {
                     private Random _rng = new Random();
