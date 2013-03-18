@@ -17,7 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ConsistentHash {
-    private static final String RING_MEMBERSHIP = "org.dancres.peers.consistentHashRing.ringMembership";
+    private static final String RING_MEMBERSHIP = "org.dancres.peers.ring.consistentHash.ringMembership";
 
     private static final Logger _logger = LoggerFactory.getLogger(ConsistentHash.class);
 
