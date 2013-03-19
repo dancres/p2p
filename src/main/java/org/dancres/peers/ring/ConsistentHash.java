@@ -548,14 +548,20 @@ public class ConsistentHash {
         return aPosn;
     }
 
-    public RingPosition newPosition() {
+    private SortedSet<Comparable> flattenPositions() {
         // Simply flatten _ringPositions to get a view of current ring, don't care about peers or collision detection
         //
-        HashSet<Comparable> myOccupiedPositions = new HashSet<Comparable>();
+        TreeSet<Comparable> myOccupiedPositions = new TreeSet<Comparable>();
 
         for (RingPositions myRPs : _ringPositions.values())
             for (RingPosition myRP : myRPs.getPositions())
                 myOccupiedPositions.add(myRP.getPosition());
+
+        return myOccupiedPositions;
+    }
+
+    public RingPosition newPosition() {
+        SortedSet<Comparable> myOccupiedPositions = flattenPositions();
 
         Comparable myNewPos;
 
@@ -577,7 +583,21 @@ public class ConsistentHash {
      * @return
      */
     public RingPosition allocate(Comparable aHashCode) {
-        throw new UnsupportedOperationException();
+        SortedSet<RingPosition> myPositions = new TreeSet<RingPosition>(rebuildRing(_ringPositions)._newRing.values());
+
+        // If aHashCode is greater than the greatest position, it wraps around to the first
+        //
+        if (myPositions.last()._position.compareTo(aHashCode) < 1)
+            return myPositions.first();
+        else {
+            for (RingPosition myPos : myPositions) {
+                if (myPos._position.compareTo(aHashCode) == 1) {
+                    return myPos;
+                }
+            }
+        }
+
+        throw new RuntimeException("Impossible but the compiler is too stupid to know");
     }
 
     public static interface Listener {
