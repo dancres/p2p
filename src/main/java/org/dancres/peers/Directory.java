@@ -30,7 +30,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @todo Add support for dead node elimination
  */
 public class Directory implements Peer.Service {
+    private static final long GOSSIP_PERIOD = 5000;
+
     private static final Logger _logger = LoggerFactory.getLogger(Directory.class);
+
     private final PeerSet _peers;
     private final Peer _peer;
     private final Peer.ServiceDispatcher _dispatcher;
@@ -115,11 +118,14 @@ public class Directory implements Peer.Service {
         _peer.add(this);
     }
 
+    public long getGossipPeriod() {
+        return GOSSIP_PERIOD;
+    }
     /**
      * Ask the directory service to commence publishing of local peer details and collection of data about other peers.
      */
     public void start() {
-        _peer.getTimer().schedule(new GossipTask(), 0, 5000);
+        _peer.getTimer().schedule(new GossipTask(), 0, GOSSIP_PERIOD);
     }
 
     /**
