@@ -366,7 +366,7 @@ public class ConsistentHash {
 
                 for (RingPosition myPosn : myRingRebuild._rejected) {
                     for (Listener anL : _listeners) {
-                        anL.rejected(myPosn);
+                        anL.rejected(ConsistentHash.this, myPosn);
                     }
                 }
             }
@@ -418,7 +418,7 @@ public class ConsistentHash {
             if (! myNeighbourRebuild._changes.isEmpty())
                 for (Listener myL : _listeners)
                     for (NeighbourRelation myChange : myNeighbourRebuild._changes)
-                        myL.newNeighbour(myChange._owned, myChange._neighbour);
+                        myL.newNeighbour(ConsistentHash.this, myChange._owned, myChange._neighbour);
         }
     }
 
@@ -581,8 +581,8 @@ public class ConsistentHash {
     }
 
     public static interface Listener {
-        public void newNeighbour(RingPosition anOwnedPosition, RingPosition aNeighbourPosition);
+        public void newNeighbour(ConsistentHash aRing, RingPosition anOwnedPosition, RingPosition aNeighbourPosition);
 
-        public void rejected(RingPosition anOwnedPosition);
+        public void rejected(ConsistentHash aRing, RingPosition anOwnedPosition);
     }
 }
