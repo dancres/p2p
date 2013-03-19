@@ -537,7 +537,7 @@ public class ConsistentHash {
         return Collections.unmodifiableCollection(rebuildRing(_ringPositions)._newRing.values());
     }
 
-    public RingPositions getCurrentPositions() {
+    public RingPositions getPeerPositions() {
         return _ringPositions.get(_peer.getAddress());
     }
 
