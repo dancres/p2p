@@ -533,7 +533,7 @@ public class ConsistentHash {
         return Collections.unmodifiableSet(_neighbours.get());
     }
 
-    public Collection<RingPosition> getCurrentRing() {
+    public Collection<RingPosition> getRing() {
         return Collections.unmodifiableCollection(rebuildRing(_ringPositions)._newRing.values());
     }
 
