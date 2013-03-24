@@ -30,6 +30,11 @@ public class ConsistentHash {
         public String pack(Comparable anId);
     }
 
+    public static interface Listener {
+        public void newNeighbour(ConsistentHash aRing, RingPosition anOwnedPosition, RingPosition aNeighbourPosition);
+        public void rejected(ConsistentHash aRing, RingPosition anOwnedPosition);
+    }
+
     private static class RingPositionSerializer implements JsonSerializer<RingPosition> {
         private PositionPacker _positionPacker;
 
@@ -610,11 +615,5 @@ public class ConsistentHash {
         }
 
         throw new RuntimeException("Impossible but the compiler is too stupid to know");
-    }
-
-    public static interface Listener {
-        public void newNeighbour(ConsistentHash aRing, RingPosition anOwnedPosition, RingPosition aNeighbourPosition);
-
-        public void rejected(ConsistentHash aRing, RingPosition anOwnedPosition);
     }
 }
