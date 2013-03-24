@@ -30,7 +30,13 @@ public class ConsistentHash {
         public String pack(Comparable anId);
     }
 
-    private class RingPositionSerializer implements JsonSerializer<RingPosition> {
+    private static class RingPositionSerializer implements JsonSerializer<RingPosition> {
+        private PositionPacker _positionPacker;
+
+        RingPositionSerializer(PositionPacker aPacker) {
+            _positionPacker = aPacker;
+        }
+
         public JsonElement serialize(RingPosition ringPosition, Type type,
                                      JsonSerializationContext jsonSerializationContext) {
             JsonArray myArray = new JsonArray();
@@ -43,7 +49,13 @@ public class ConsistentHash {
         }
     }
 
-    private class RingPositionDeserializer implements JsonDeserializer<RingPosition> {
+    private static class RingPositionDeserializer implements JsonDeserializer<RingPosition> {
+        private PositionPacker _positionPacker;
+
+        RingPositionDeserializer(PositionPacker aPacker) {
+            _positionPacker = aPacker;
+        }
+
         public RingPosition deserialize(JsonElement jsonElement, Type type,
                                         JsonDeserializationContext jsonDeserializationContext)
                 throws JsonParseException {
@@ -57,9 +69,10 @@ public class ConsistentHash {
     private class Packager {
         private final Gson _gson;
 
-        Packager() {
-            _gson = new GsonBuilder().registerTypeAdapter(RingPosition.class, new RingPositionSerializer()).
-                    registerTypeAdapter(RingPosition.class, new RingPositionDeserializer()).create();
+        Packager(PositionPacker aPacker) {
+            _gson = new GsonBuilder().registerTypeAdapter(RingPosition.class,
+                    new RingPositionSerializer(aPacker)).registerTypeAdapter(RingPosition.class,
+                    new RingPositionDeserializer(aPacker)).create();
         }
 
         String flattenRingPositions(RingPositions aPositions) {
@@ -237,9 +250,8 @@ public class ConsistentHash {
     private final AtomicReference<HashSet<NeighbourRelation>> _neighbours =
             new AtomicReference<HashSet<NeighbourRelation>>(new HashSet<NeighbourRelation>());
 
-    private final Packager _packager = new Packager();
+    private final Packager _packager;
     private final PositionGenerator _positionGenerator;
-    private final PositionPacker _positionPacker;
 
     public ConsistentHash(Peer aPeer, PositionGenerator aGenerator, PositionPacker aPacker) {
         if (aGenerator == null)
@@ -250,7 +262,7 @@ public class ConsistentHash {
 
         _peer = aPeer;
         _positionGenerator = aGenerator;
-        _positionPacker = aPacker;
+        _packager = new Packager(aPacker);
         _dir = (Directory) aPeer.find(Directory.class);
 
         if (_dir == null)
