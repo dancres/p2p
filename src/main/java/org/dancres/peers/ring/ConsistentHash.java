@@ -142,24 +142,12 @@ public class ConsistentHash {
     }
 
     private class DirListenerImpl implements Directory.Listener {
-        /**
-         * A locally inserted position will be communicated to other nodes as we gossip. Other nodes though may
-         * introduce no changes to the ring. <code>updated</code> is called for each gossip and sweep through the
-         * directory whether there are changes or not. We rely on this to run a conflict resolution sweep
-         * to do conflict resolution on our locally inserted positions. Thus at this moment we cannot avoid doing
-         * conflict resolution in absence of ring changes.
-         *
-         * @todo Modify new/insertPosition to do a sweep for conflict resolution so that we can implement a no
-         * gossip'd updates, no sweep optimisation.
-         *
-         * @param aDirectory
-         * @param aNewPeers
-         * @param anUpdatedPeers
-         */
         public void updated(Directory aDirectory, List<Directory.Entry> aNewPeers,
                             List<Directory.Entry> anUpdatedPeers) {
 
             _logger.debug("Ring Update");
+
+            boolean haveUpdates = false;
 
             // Extract implicitly new positions from newly discovered peer
             //
@@ -177,6 +165,7 @@ public class ConsistentHash {
                  * worked out over time
                  */
                 _ringPositions.put(aNewEntry.getPeerName(), myPeerPositions);
+                haveUpdates = true;
             }
 
             // For updated peers, if they're a ring member that just acquired their first set of positions from our
@@ -200,14 +189,19 @@ public class ConsistentHash {
                      * worked out over time
                      */
                     _ringPositions.put(anUpdatedEntry.getPeerName(), myPeerPositions);
+                    haveUpdates = true;
                 } else {
                     if (myPeerPositions.supercedes(myPrevious)) {
                         _logger.debug("Updated positions from: " + anUpdatedEntry.getPeerName(), myPeerPositions);
 
                         _ringPositions.replace(anUpdatedEntry.getPeerName(), myPrevious, myPeerPositions);
+                        haveUpdates = true;
                     }
                 }
             }
+
+            if (! haveUpdates)
+                return;
 
             // Now recompute the positions on the ring
             //
