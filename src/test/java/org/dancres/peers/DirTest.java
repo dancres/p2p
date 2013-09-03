@@ -1,7 +1,7 @@
 package org.dancres.peers;
 
 import com.ning.http.client.AsyncHttpClient;
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.dancres.peers.primitives.GossipBarrier;
 import org.dancres.peers.primitives.HttpServer;
 import org.dancres.peers.primitives.InProcessPeer;

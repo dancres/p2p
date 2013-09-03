@@ -1,6 +1,6 @@
 package org.dancres.peers;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.dancres.peers.primitives.StaticPeerSet;
 import org.junit.Test;
 

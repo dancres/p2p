@@ -3,7 +3,7 @@ package org.dancres.peers.primitives;
 import com.ning.http.client.AsyncCompletionHandler;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.Response;
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.dancres.peers.Peer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.handler.codec.http.HttpRequest;
