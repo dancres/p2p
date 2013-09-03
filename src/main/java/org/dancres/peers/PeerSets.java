@@ -6,6 +6,9 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
+/**
+ * Utility methods for handling <code>PeerSets</code>
+ */
 public class PeerSets {
     private static final Random _rng = new Random();
 

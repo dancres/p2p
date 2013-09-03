@@ -385,18 +385,6 @@ public class ConsistentHash {
         return new NeighboursSnapshot(myNeighbours, myChanges);
     }
 
-    public Set<NeighbourRelation> getNeighbours() {
-        return Collections.unmodifiableSet(_neighbours.get());
-    }
-
-    public Collection<RingPosition> getRing() {
-        return Collections.unmodifiableCollection(computeRing(_ringPositions)._newRing.values());
-    }
-
-    public RingPositions getPeerPositions() {
-        return _ringPositions.get(_peer.getAddress());
-    }
-
     private RingPosition insertPosition(RingPosition aPosn) {
         RingPositions myOldPosns = _ringPositions.get(_peer.getAddress());
         _ringPositions.replace(_peer.getAddress(), myOldPosns, myOldPosns.add(Collections.singletonList(aPosn)));
@@ -416,10 +404,47 @@ public class ConsistentHash {
         return myOccupiedPositions;
     }
 
+    /**
+     * @return the neighbours for each of this peer's positions.
+     */
+    public Set<NeighbourRelation> getNeighbours() {
+        return Collections.unmodifiableSet(_neighbours.get());
+    }
+
+    /**
+     * @return this peer's current view of the ring
+     */
+    public Collection<RingPosition> getRing() {
+        return Collections.unmodifiableCollection(computeRing(_ringPositions)._newRing.values());
+    }
+
+    /**
+     * @return the positions occupied by the local peer
+     */
+    public RingPositions getPeerPositions() {
+        return _ringPositions.get(_peer.getAddress());
+    }
+
+    /**
+     * Create an additional position on the ring for this peer
+     *
+     * @return The new ring position
+     *
+     * @throws CollisionException if the operation conflicts with other allocations
+     */
     public RingPosition createPosition() throws CollisionException {
         return createPosition(null);
     }
 
+    /**
+     * Create an additional position on the ring
+     *
+     * @param aDesiredPosition Pass <code>null</code> for an automatic assignment or a suitable <code>Comparable</code>
+     *                         to request a specific position.
+     * @return The new ring position
+     *
+     * @throws CollisionException if the specified position is already allocated.
+     */
     public RingPosition createPosition(Comparable aDesiredPosition) throws CollisionException {
         SortedSet<Comparable> myOccupiedPositions = flattenPositions();
 

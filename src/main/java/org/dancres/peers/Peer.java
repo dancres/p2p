@@ -9,17 +9,24 @@ import java.util.Timer;
 
 public interface Peer {
     /**
-     *
+     * Shutdown this peer
      */
-    public URI getURI();
-
     public void stop();
 
     /**
      * @return the URI at which this peer is rooted
      */
+    public URI getURI();
+
+    /**
+     * @return astring representation of the URI at which this peer is rooted
+     */
     public String getAddress();
 
+    /**
+     * @param aServiceClass is the class of the service to find
+     * @return the registered instance of the specified service or <code>null</code> if it's not present.
+     */
     public Service find(Class aServiceClass);
 
     /**
@@ -27,12 +34,28 @@ public interface Peer {
      */
     public void add(Service aService);
 
+    /**
+     * Peer's provide a timer instance which can be shared across registered services for purposes of running
+     * regular or scheduled tasks.
+     *
+     * @return the peer's timer instance
+     */
     public Timer getTimer();
 
+    /**
+     * @return a reference to the underlying comms stack being used by the peer.
+     */
     public AsyncHttpClient getClient();
 
     public interface Service {
+        /**
+         * @return the path for this service as registered under the peer
+         */
         String getAddress();
+
+        /**
+         * @return the dispatcher this service wishes to have used by the peer for handling requests.
+         */
         ServiceDispatcher getDispatcher();
     }
 

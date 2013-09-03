@@ -7,6 +7,9 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * A static (unchanging set of peers) implementation of a <code>PeerSet</code>
+ */
 public class StaticPeerSet implements PeerSet {
     private final Set<URI> _peerSet;
 

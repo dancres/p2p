@@ -21,11 +21,13 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Directory service that lives atop a set of peers. The set of peers are used to maintain the directory via gossip.
- * There may be many more peers that are part of the directory service though not used to track/maintain it directly.
+ * <p>Directory service that lives atop a set of peers. These peers are used to maintain the directory via gossip.
+ * There may be many more peers that are registered with the directory service though not used to track/maintain
+ * it directly. Thus a peer for which the directory service is created may not be a member of the <code>PeerSet</code>
+ * that maintains the directory.</p>
  *
- * A directory service tracks information across all known peers. The information provided is entirely user-defined
- * via attributes. Liveness tests are supported via timestamps, versioning of attributes is encouraged.
+ * <p>A directory service tracks information across all known peers. The information provided is entirely user-defined
+ * via attributes. Liveness tests are supported via timestamps, versioning of attributes is encouraged.</p>
  *
  * @todo Add support for dead node elimination
  */
@@ -108,8 +110,9 @@ public class Directory implements Peer.Service {
     private final ConcurrentMap<String, Entry> _directory = new ConcurrentHashMap<String, Entry>();
 
     /**
-     * @param aPeer is the peer this directory service will run on and represent
-     * @param aPeerSet is the set of peers that will co-operate in providing the directory service
+     * @param aPeer is the peer that will be advertised by this directory service.
+     * @param aPeerSet is the set of peers that will co-operate in providing the directory service (which may be a
+     *                 subset of the peers registered with and using the directory service).
      */
     public Directory(Peer aPeer, PeerSet aPeerSet) {
         _peers = aPeerSet;
