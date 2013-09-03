@@ -71,13 +71,15 @@ public class ConsistentHash {
         }
     }
 
-    private class Packager {
+    private static class Packager {
         private final Gson _gson;
+        private final String _ringMembershipKey;
 
-        Packager(PositionPacker aPacker) {
+        Packager(PositionPacker aPacker, String aRingMembershipKey) {
             _gson = new GsonBuilder().registerTypeAdapter(RingPosition.class,
                     new RingPositionSerializer(aPacker)).registerTypeAdapter(RingPosition.class,
                     new RingPositionDeserializer(aPacker)).create();
+            _ringMembershipKey = aRingMembershipKey;
         }
 
         String flattenRingPositions(RingPositions aPositions) {
@@ -85,7 +87,7 @@ public class ConsistentHash {
         }
 
         RingPositions extractRingPositions(Directory.Entry anEntry) {
-            return _gson.fromJson(anEntry.getAttributes().get(RING_MEMBERSHIP), RingPositions.class);
+            return _gson.fromJson(anEntry.getAttributes().get(_ringMembershipKey), RingPositions.class);
         }
     }
 
@@ -267,7 +269,7 @@ public class ConsistentHash {
 
         _peer = aPeer;
         _positionGenerator = aGenerator;
-        _packager = new Packager(aPacker);
+        _packager = new Packager(aPacker, RING_MEMBERSHIP);
         _dir = (Directory) aPeer.find(Directory.class);
 
         if (_dir == null)
