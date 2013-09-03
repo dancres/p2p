@@ -55,7 +55,7 @@ public class ConsistentHashTest {
         ConsistentHash myRing1 = new ConsistentHash(myPeer1);
         ConsistentHash myRing2 = new ConsistentHash(myPeer2);
 
-        myRing1.insertPosition(new ConsistentHash.RingPosition(myPeer1, 1, System.currentTimeMillis()));
+        myRing1.insertPosition(new RingPosition(myPeer1, 1, System.currentTimeMillis()));
 
         // Allow some gossip time so that this ring position has "taken" across the cluster of peers
         //
@@ -70,7 +70,7 @@ public class ConsistentHashTest {
 
         myRing1.add(new RejectionCountingListenerImpl(myPeer1RejectCount));
         myRing2.add(new RejectionCountingListenerImpl(myPeer2RejectCount));
-        myRing2.insertPosition(new ConsistentHash.RingPosition(myPeer2, 1, System.currentTimeMillis()));
+        myRing2.insertPosition(new RingPosition(myPeer2, 1, System.currentTimeMillis()));
 
         // Ring 2 contains a conflicting, newer position which when propagated should cause collisions in peer1
         // and peer2. Peer1 should be silent, Peer2 should complain
@@ -101,11 +101,11 @@ public class ConsistentHashTest {
             _count = aCount;
         }
 
-        public void newNeighbour(ConsistentHash aRing, ConsistentHash.RingPosition anOwnedPosition,
-                                 ConsistentHash.RingPosition aNeighbourPosition) {
+        public void newNeighbour(ConsistentHash aRing, RingPosition anOwnedPosition,
+                                 RingPosition aNeighbourPosition) {
         }
 
-        public void rejected(ConsistentHash aRing, ConsistentHash.RingPosition anOwnedPosition) {
+        public void rejected(ConsistentHash aRing, RingPosition anOwnedPosition) {
             _count.incrementAndGet();
         }
     }
@@ -152,8 +152,8 @@ public class ConsistentHashTest {
         myRing1.add(new NeighbourCountingListenerImpl(myPeer1NeighbourCount));
         myRing2.add(new NeighbourCountingListenerImpl(myPeer2NeighbourCount));
 
-        myRing1.insertPosition(new ConsistentHash.RingPosition(myPeer1, 1, System.currentTimeMillis()));
-        myRing2.insertPosition(new ConsistentHash.RingPosition(myPeer2, 3, System.currentTimeMillis()));
+        myRing1.insertPosition(new RingPosition(myPeer1, 1, System.currentTimeMillis()));
+        myRing2.insertPosition(new RingPosition(myPeer2, 3, System.currentTimeMillis()));
 
         // Allow some gossip time so that this ring position has "taken" across the cluster of peers
         // Have to wait a couple of cycles because neighbour processing might lag a little behind our discovery
@@ -203,12 +203,12 @@ public class ConsistentHashTest {
             _count = aCount;
         }
 
-        public void newNeighbour(ConsistentHash aRing, ConsistentHash.RingPosition anOwnedPosition,
-                                 ConsistentHash.RingPosition aNeighbourPosition) {
+        public void newNeighbour(ConsistentHash aRing, RingPosition anOwnedPosition,
+                                 RingPosition aNeighbourPosition) {
             _count.incrementAndGet();
         }
 
-        public void rejected(ConsistentHash aRing, ConsistentHash.RingPosition anOwnedPosition) {
+        public void rejected(ConsistentHash aRing, RingPosition anOwnedPosition) {
         }
     }
 
@@ -279,12 +279,12 @@ public class ConsistentHashTest {
     }
 
     class StabiliserImpl implements ConsistentHash.Listener {
-        public void newNeighbour(ConsistentHash aRing, ConsistentHash.RingPosition anOwnedPosition,
-                                 ConsistentHash.RingPosition aNeighbourPosition) {
+        public void newNeighbour(ConsistentHash aRing, RingPosition anOwnedPosition,
+                                 RingPosition aNeighbourPosition) {
             // Doesn't matter
         }
 
-        public void rejected(ConsistentHash aRing, ConsistentHash.RingPosition anOwnedPosition) {
+        public void rejected(ConsistentHash aRing, RingPosition anOwnedPosition) {
             aRing.newPosition();
         }
     }

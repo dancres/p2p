@@ -46,9 +46,9 @@ public class ConsistentHash {
                                      JsonSerializationContext jsonSerializationContext) {
             JsonArray myArray = new JsonArray();
 
-            myArray.add(new JsonPrimitive(ringPosition._peerName));
-            myArray.add(new JsonPrimitive(_positionPacker.pack(ringPosition._position)));
-            myArray.add(new JsonPrimitive(ringPosition._birthDate));
+            myArray.add(new JsonPrimitive(ringPosition.getPeerName()));
+            myArray.add(new JsonPrimitive(_positionPacker.pack(ringPosition.getPosition())));
+            myArray.add(new JsonPrimitive(ringPosition.getBirthDate()));
 
             return myArray;
         }
@@ -88,69 +88,6 @@ public class ConsistentHash {
 
         RingPositions extractRingPositions(Directory.Entry anEntry) {
             return _gson.fromJson(anEntry.getAttributes().get(_ringMembershipKey), RingPositions.class);
-        }
-    }
-
-    public static class RingPosition implements Comparable {
-        private final String _peerName;
-        private final Comparable _position;
-        private final long _birthDate;
-
-        RingPosition(Peer aPeer, Comparable aPosition) {
-            this(aPeer, aPosition, System.currentTimeMillis());
-        }
-
-        RingPosition(Peer aPeer, Comparable aPosition, long aBirthDate) {
-            this(aPeer.getAddress(), aPosition, aBirthDate);
-        }
-
-        RingPosition(String aPeerAddr, Comparable aPosition, long aBirthDate) {
-            if (aPosition == null)
-                throw new IllegalArgumentException();
-
-            _peerName = aPeerAddr;
-            _position = aPosition;
-            _birthDate = aBirthDate;
-        }
-
-        public Comparable getPosition() {
-            return _position;
-        }
-
-        boolean bounces(RingPosition anotherPosn) {
-            return _birthDate < anotherPosn._birthDate;
-        }
-
-        boolean isLocal(Peer aPeer) {
-            return _peerName.equals(aPeer.getAddress());
-        }
-
-        public int compareTo(Object anObject) {
-            RingPosition myOther = (RingPosition) anObject;
-
-            return (_position.compareTo(myOther._position));
-        }
-
-        public int hashCode() {
-            int myFirst = _peerName.hashCode();
-            int mySecond = _position.hashCode();
-
-            return myFirst ^ mySecond;
-        }
-
-        public boolean equals(Object anObject) {
-            if (anObject instanceof RingPosition) {
-                RingPosition myOther = (RingPosition) anObject;
-
-                if (_peerName.equals(myOther._peerName))
-                    return (compareTo(anObject) == 0);
-            }
-
-            return false;
-        }
-
-        public String toString() {
-            return "RingPosn: " + _position + " @ " + _peerName + " born: " + _birthDate;
         }
     }
 
@@ -606,11 +543,11 @@ public class ConsistentHash {
 
         // If aHashCode is greater than the greatest position, it wraps around to the first
         //
-        if (myPositions.last()._position.compareTo(aHashCode) < 1)
+        if (myPositions.last().getPosition().compareTo(aHashCode) < 1)
             return myPositions.first();
         else {
             for (RingPosition myPos : myPositions) {
-                if (myPos._position.compareTo(aHashCode) == 1) {
+                if (myPos.getPosition().compareTo(aHashCode) == 1) {
                     return myPos;
                 }
             }
