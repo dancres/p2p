@@ -1,6 +1,5 @@
 package org.dancres.peers.ring;
 
-import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -10,7 +9,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import com.google.gson.*;
 import org.dancres.peers.Directory;
 import org.dancres.peers.Peer;
 import org.slf4j.Logger;
@@ -163,6 +161,8 @@ public class ConsistentHash {
 
             _logger.debug("Ring Update");
 
+            // Extract implicitly new positions from newly discovered peer
+            //
             for (Directory.Entry aNewEntry : Iterables.filter(aNewPeers, new Predicate<Directory.Entry>() {
                 public boolean apply(Directory.Entry entry) {
                     return entry.getAttributes().containsKey(RING_MEMBERSHIP);
@@ -179,6 +179,9 @@ public class ConsistentHash {
                 _ringPositions.put(aNewEntry.getPeerName(), myPeerPositions);
             }
 
+            // For updated peers, if they're a ring member that just acquired their first set of positions from our
+            // perspective, treat them as new, otherwise replace the existing ones
+            //
             for (Directory.Entry anUpdatedEntry : Iterables.filter(anUpdatedPeers, new Predicate<Directory.Entry>() {
                 public boolean apply(Directory.Entry entry) {
                     return entry.getAttributes().containsKey(RING_MEMBERSHIP);
@@ -206,26 +209,30 @@ public class ConsistentHash {
                 }
             }
 
-            RingRebuild myRingRebuild = rebuildRing(_ringPositions);
+            // Now recompute the positions on the ring
+            //
+            RingSnapshot myRingSnapshot = computeRing(_ringPositions);
 
-            if (! myRingRebuild._rejected.isEmpty()) {
+            // Clear out the rejections and signal them to listeners
+            //
+            if (! myRingSnapshot._rejected.isEmpty()) {
                 RingPositions myOldPosns = _ringPositions.get(_peer.getAddress());
-                _ringPositions.replace(_peer.getAddress(), myOldPosns, myOldPosns.remove(myRingRebuild._rejected));
+                _ringPositions.replace(_peer.getAddress(), myOldPosns, myOldPosns.remove(myRingSnapshot._rejected));
 
-                for (RingPosition myPosn : myRingRebuild._rejected) {
+                for (RingPosition myPosn : myRingSnapshot._rejected) {
                     for (Listener anL : _listeners) {
                         anL.rejected(ConsistentHash.this, myPosn);
                     }
                 }
             }
 
-            // No point in a diff if we're empty
+            // No point in a recomputing neighbours if the new ring is empty
             //
-            if (myRingRebuild._newRing.isEmpty())
+            if (myRingSnapshot._newRing.isEmpty())
                 return;
 
             /*
-             * JVM Bug! Seemingly if rebuildNeighbours does not return two completely independent sets, the following
+             * JVM Bug! Seemingly if computeNeighbours does not return two completely independent sets, the following
              * clear and addAll will cause _changes to become empty in spite of the fact that it's possible duplicate
              * myNeighbourRebuild._neighbours is not empty. Another possibility is that a second final field in a simple
              * return object, as done with ring and neighbour computations, causes problems. Notably both methods
@@ -258,8 +265,8 @@ public class ConsistentHash {
                     " " + System.identityHashCode(_neighbours));
              */
 
-            NeighboursRebuild myNeighbourRebuild =
-                    rebuildNeighbours(myRingRebuild._newRing.values(), _neighbours.get(), _peer);
+            NeighboursSnapshot myNeighbourRebuild =
+                    computeNeighbours(myRingSnapshot._newRing.values(), _neighbours.get(), _peer);
 
             _neighbours.set(myNeighbourRebuild._neighbours);
 
@@ -270,24 +277,23 @@ public class ConsistentHash {
         }
     }
 
-    private static class RingRebuild {
+    private static class RingSnapshot {
         final Map<Comparable, RingPosition> _newRing;
         final List<RingPosition> _rejected;
 
-        RingRebuild(Map<Comparable, RingPosition> aNewRing, List<RingPosition> aRejected) {
+        RingSnapshot(Map<Comparable, RingPosition> aNewRing, List<RingPosition> aRejected) {
             _newRing = aNewRing;
             _rejected = aRejected;
         }
     }
 
-    private RingRebuild rebuildRing(Map<String, RingPositions> aRingPositions) {
-
-        /*
-         * Re-build the ring from _ringPositions
-         *
-         * Doing collision resolution as we go. In the case where one of our positions is the loser, remove it
-         * and report it to listeners.
-         */
+    /**
+     * Compute a new ring based on the current positions
+     *
+     * @param aRingPositions
+     * @return the new ring structure and details of any node positions rejected
+     */
+    private RingSnapshot computeRing(Map<String, RingPositions> aRingPositions) {
         Map<Comparable, RingPosition> myNewRing = new HashMap<Comparable, RingPosition>();
         List<RingPosition> myLocalRejections = new LinkedList<RingPosition>();
 
@@ -328,22 +334,30 @@ public class ConsistentHash {
         // JVM workaround for clear and addAll
         // return new RingRebuild(myNewRing, new LinkedList<RingPosition>(myLocalRejections));
 
-        return new RingRebuild(myNewRing, myLocalRejections);
+        return new RingSnapshot(myNewRing, myLocalRejections);
     }
 
-    private static class NeighboursRebuild {
+    private static class NeighboursSnapshot {
         final HashSet<NeighbourRelation> _neighbours;
         final Set<NeighbourRelation> _changes;
 
-        NeighboursRebuild(HashSet<NeighbourRelation> aNeighbours, Set<NeighbourRelation> aChanges) {
+        NeighboursSnapshot(HashSet<NeighbourRelation> aNeighbours, Set<NeighbourRelation> aChanges) {
             _neighbours = aNeighbours;
             _changes = aChanges;
         }
     }
 
-    private NeighboursRebuild rebuildNeighbours(Collection<RingPosition> aRing,
-                                                         HashSet<NeighbourRelation> anOldNeighbours,
-                                                         Peer aLocal) {
+    /**
+     * Compute the neighbour position for each of our own positions
+     *
+     * @param aRing
+     * @param anOldNeighbours
+     * @param aLocal
+     * @return
+     */
+    private NeighboursSnapshot computeNeighbours(Collection<RingPosition> aRing,
+                                                 HashSet<NeighbourRelation> anOldNeighbours,
+                                                 Peer aLocal) {
         HashSet<NeighbourRelation> myNeighbours = new HashSet<NeighbourRelation>();
         SortedSet<RingPosition> myRing = new TreeSet<RingPosition>(aRing);
         RingPosition myLast = myRing.last();
@@ -374,7 +388,7 @@ public class ConsistentHash {
         // JVM workaround for clear and addAll
         // return new NeighboursRebuild(myNeighbours, new HashSet<NeighbourRelation>(myChanges));
 
-        return new NeighboursRebuild(myNeighbours, myChanges);
+        return new NeighboursSnapshot(myNeighbours, myChanges);
     }
 
     public Set<NeighbourRelation> getNeighbours() {
@@ -382,7 +396,7 @@ public class ConsistentHash {
     }
 
     public Collection<RingPosition> getRing() {
-        return Collections.unmodifiableCollection(rebuildRing(_ringPositions)._newRing.values());
+        return Collections.unmodifiableCollection(computeRing(_ringPositions)._newRing.values());
     }
 
     public RingPositions getPeerPositions() {
@@ -431,7 +445,7 @@ public class ConsistentHash {
      * @return
      */
     public RingPosition allocate(Comparable aHashCode) {
-        SortedSet<RingPosition> myPositions = new TreeSet<RingPosition>(rebuildRing(_ringPositions)._newRing.values());
+        SortedSet<RingPosition> myPositions = new TreeSet<RingPosition>(computeRing(_ringPositions)._newRing.values());
 
         // If aHashCode is greater than the greatest position, it wraps around to the first
         //
