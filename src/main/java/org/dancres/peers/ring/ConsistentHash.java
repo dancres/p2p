@@ -403,7 +403,7 @@ public class ConsistentHash {
         return _ringPositions.get(_peer.getAddress());
     }
 
-    RingPosition insertPosition(RingPosition aPosn) {
+    private RingPosition insertPosition(RingPosition aPosn) {
         RingPositions myOldPosns = _ringPositions.get(_peer.getAddress());
         _ringPositions.replace(_peer.getAddress(), myOldPosns, myOldPosns.add(Collections.singletonList(aPosn)));
 
@@ -423,13 +423,22 @@ public class ConsistentHash {
     }
 
     public RingPosition createPosition() throws CollisionException {
+        return createPosition(null);
+    }
+
+    public RingPosition createPosition(Comparable aDesiredPosition) throws CollisionException {
         SortedSet<Comparable> myOccupiedPositions = flattenPositions();
 
-        Comparable myNewPos;
+        Comparable myNewPos = aDesiredPosition;
 
-        do {
-            myNewPos = _positionGenerator.newId();
-        } while (myOccupiedPositions.contains(myNewPos));
+        if (myNewPos != null) {
+            if (myOccupiedPositions.contains(myNewPos))
+                throw new CollisionException("Desired position is already occupied: " + myNewPos);
+        } else {
+            do {
+                myNewPos = _positionGenerator.newId();
+            } while (myOccupiedPositions.contains(myNewPos));
+        }
 
         return insertPosition(new RingPosition(_peer, myNewPos));
     }
