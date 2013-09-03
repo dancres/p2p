@@ -254,8 +254,8 @@ public class ConsistentHashTest {
         myRing2.add(new StabiliserImpl());
 
         for (int i = 0; i < 3; i++) {
-            myRing1.newPosition();
-            myRing2.newPosition();
+            myRing1.createPosition();
+            myRing2.createPosition();
         }
 
         // Allow some gossip time so that this ring position has "taken" across the cluster of peers
@@ -285,7 +285,11 @@ public class ConsistentHashTest {
         }
 
         public void rejected(ConsistentHash aRing, RingPosition anOwnedPosition) {
-            aRing.newPosition();
+            try {
+                aRing.createPosition();
+            } catch (Exception anE) {
+                throw new RuntimeException("Couldn't allocate a replacement position");
+            }
         }
     }
 }

@@ -422,7 +422,7 @@ public class ConsistentHash {
         return myOccupiedPositions;
     }
 
-    public RingPosition newPosition() {
+    public RingPosition createPosition() throws CollisionException {
         SortedSet<Comparable> myOccupiedPositions = flattenPositions();
 
         Comparable myNewPos;
