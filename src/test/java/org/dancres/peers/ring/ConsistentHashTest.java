@@ -36,8 +36,8 @@ public class ConsistentHashTest {
 
         PeerSet myPeerSet = new StaticPeerSet(myPeers);
 
-        Directory myPeer1Dir = new Directory(myPeer1, myPeerSet);
-        Directory myPeer2Dir = new Directory(myPeer2, myPeerSet);
+        Directory myPeer1Dir = new Directory(myPeer1, myPeerSet, 2000);
+        Directory myPeer2Dir = new Directory(myPeer2, myPeerSet, 2000);
 
         myPeer1Dir.add(myBarrier1);
         myPeer2Dir.add(myBarrier2);
@@ -134,8 +134,8 @@ public class ConsistentHashTest {
 
         PeerSet myPeerSet = new StaticPeerSet(myPeers);
 
-        Directory myPeer1Dir = new Directory(myPeer1, myPeerSet);
-        Directory myPeer2Dir = new Directory(myPeer2, myPeerSet);
+        Directory myPeer1Dir = new Directory(myPeer1, myPeerSet, 2000);
+        Directory myPeer2Dir = new Directory(myPeer2, myPeerSet, 2000);
 
         myPeer1Dir.add(myBarrier1);
         myPeer2Dir.add(myBarrier2);
@@ -244,8 +244,8 @@ public class ConsistentHashTest {
 
         PeerSet myPeerSet = new StaticPeerSet(myPeers);
 
-        Directory myPeer1Dir = new Directory(myPeer1, myPeerSet);
-        Directory myPeer2Dir = new Directory(myPeer2, myPeerSet);
+        Directory myPeer1Dir = new Directory(myPeer1, myPeerSet, 2000);
+        Directory myPeer2Dir = new Directory(myPeer2, myPeerSet, 2000);
 
         myPeer1Dir.add(myBarrier1);
         myPeer2Dir.add(myBarrier2);
@@ -333,8 +333,8 @@ public class ConsistentHashTest {
 
         PeerSet myPeerSet = new StaticPeerSet(myPeers);
 
-        Directory myPeer1Dir = new Directory(myPeer1, myPeerSet);
-        Directory myPeer2Dir = new Directory(myPeer2, myPeerSet);
+        Directory myPeer1Dir = new Directory(myPeer1, myPeerSet, 2000);
+        Directory myPeer2Dir = new Directory(myPeer2, myPeerSet, 2000);
 
         myPeer1Dir.add(myBarrier1);
         myPeer2Dir.add(myBarrier2);
@@ -396,8 +396,8 @@ public class ConsistentHashTest {
 
         PeerSet myPeerSet = new StaticPeerSet(myPeers);
 
-        Directory myPeer1Dir = new Directory(myPeer1, myPeerSet);
-        Directory myPeer2Dir = new Directory(myPeer2, myPeerSet);
+        Directory myPeer1Dir = new Directory(myPeer1, myPeerSet, 2000);
+        Directory myPeer2Dir = new Directory(myPeer2, myPeerSet, 2000);
 
         myPeer1Dir.add(myBarrier1);
         myPeer2Dir.add(myBarrier2);
