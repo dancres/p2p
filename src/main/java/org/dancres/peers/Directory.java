@@ -34,45 +34,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @todo Add support for dead node elimination
  */
 public class Directory implements Peer.Service {
-    private static final long GOSSIP_PERIOD = 5000;
-
-    private static final Logger _logger = LoggerFactory.getLogger(Directory.class);
-
-    private final PeerSet _peers;
-    private final Peer _peer;
-    private final Peer.ServiceDispatcher _dispatcher;
-    private final long _birthTime = System.currentTimeMillis();
-    private final List<AttributeProducer> _producers = new CopyOnWriteArrayList<AttributeProducer>();
-    private final List<Listener> _listeners = new CopyOnWriteArrayList<Listener>();
-
-    private final Executor _notifier = Executors.newSingleThreadExecutor(new ThreadFactory() {
-        public Thread newThread(Runnable r) {
-            Thread myDaemon = new Thread(r);
-
-            myDaemon.setDaemon(true);
-            return myDaemon;
-        }
-    });
-
-    public String getAddress() {
-        return "/directory";
-    }
-
-    public Peer.ServiceDispatcher getDispatcher() {
-        return _dispatcher;
-    }
-
-    public void walk(Writer aWriter) throws IOException {
-        PrintWriter myWriter = new PrintWriter(aWriter, false);
-        Map<String, Entry> aDir = getDirectory();
-
-        for (String aPN: aDir.keySet()) {
-            myWriter.print("Peer: " + aPN);
-            myWriter.print(aDir.get(aPN));
-            myWriter.print("");
-        }
-    }
-
     public static class Entry {
         private final String _peerName;
         private final Map<String, String> _attributes;
@@ -120,6 +81,46 @@ public class Directory implements Peer.Service {
         }
     }
 
+    private static final long DEFAULT_GOSSIP_PERIOD = 5000;
+
+    private static final Logger _logger = LoggerFactory.getLogger(Directory.class);
+
+    private final PeerSet _peers;
+    private final Peer _peer;
+    private final Peer.ServiceDispatcher _dispatcher;
+    private final long _birthTime = System.currentTimeMillis();
+    private final List<AttributeProducer> _producers = new CopyOnWriteArrayList<AttributeProducer>();
+    private final List<Listener> _listeners = new CopyOnWriteArrayList<Listener>();
+    private final long _gossipPeriod;
+
+    private final Executor _notifier = Executors.newSingleThreadExecutor(new ThreadFactory() {
+        public Thread newThread(Runnable r) {
+            Thread myDaemon = new Thread(r);
+
+            myDaemon.setDaemon(true);
+            return myDaemon;
+        }
+    });
+
+    public String getAddress() {
+        return "/directory";
+    }
+
+    public Peer.ServiceDispatcher getDispatcher() {
+        return _dispatcher;
+    }
+
+    public void walk(Writer aWriter) throws IOException {
+        PrintWriter myWriter = new PrintWriter(aWriter, false);
+        Map<String, Entry> aDir = getDirectory();
+
+        for (String aPN: aDir.keySet()) {
+            myWriter.print("Peer: " + aPN);
+            myWriter.print(aDir.get(aPN));
+            myWriter.print("");
+        }
+    }
+
     private final ConcurrentMap<String, Entry> _directory = new ConcurrentHashMap<String, Entry>();
 
     /**
@@ -128,20 +129,25 @@ public class Directory implements Peer.Service {
      *                 subset of the peers registered with and using the directory service).
      */
     public Directory(Peer aPeer, PeerSet aPeerSet) {
+        this(aPeer, aPeerSet, DEFAULT_GOSSIP_PERIOD);
+    }
+
+    public Directory(Peer aPeer, PeerSet aPeerSet, long aGossipPeriod) {
         _peers = aPeerSet;
         _peer = aPeer;
         _dispatcher = new Dispatcher();
         _peer.add(this);
+        _gossipPeriod = aGossipPeriod;
     }
 
     public long getGossipPeriod() {
-        return GOSSIP_PERIOD;
+        return _gossipPeriod;
     }
     /**
      * Ask the directory service to commence publishing of local peer details and collection of data about other peers.
      */
     public void start() {
-        _peer.getTimer().schedule(new GossipTask(), 0, GOSSIP_PERIOD);
+        _peer.getTimer().schedule(new GossipTask(), 0, _gossipPeriod);
     }
 
     /**
@@ -224,7 +230,7 @@ public class Directory implements Peer.Service {
         });
     }
 
-    class Dispatcher implements Peer.ServiceDispatcher {
+    private class Dispatcher implements Peer.ServiceDispatcher {
         public void dispatch(String aServicePath, HttpRequest aRequest, HttpResponse aResponse) {
             if (aRequest.getMethod().equals(HttpMethod.POST)) {
 
@@ -250,7 +256,7 @@ public class Directory implements Peer.Service {
         }
     }
 
-    class GossipTask extends TimerTask {
+    private class GossipTask extends TimerTask {
         public void run() {
             final Gson myGson = new Gson();
             AsyncHttpClient myClient = _peer.getClient();

@@ -28,8 +28,8 @@ public class DirTest {
 
         PeerSet myPeerSet = new StaticPeerSet(myPeers);
 
-        Directory myPeer1Dir = new Directory(myPeer1, myPeerSet);
-        Directory myPeer2Dir = new Directory(myPeer2, myPeerSet);
+        Directory myPeer1Dir = new Directory(myPeer1, myPeerSet, 2000);
+        Directory myPeer2Dir = new Directory(myPeer2, myPeerSet, 2000);
         GossipBarrier myBarrier1 = new GossipBarrier();
         GossipBarrier myBarrier2 = new GossipBarrier();
 
@@ -80,7 +80,7 @@ public class DirTest {
 
         PeerSet myPeerSet = new StaticPeerSet(myPeers);
 
-        Directory myPeer1Dir = new Directory(myPeer1, myPeerSet);
+        Directory myPeer1Dir = new Directory(myPeer1, myPeerSet, 2000);
 
         myPeer1Dir.add(new Directory.AttributeProducer() {
             public Map<String, String> produce() {
@@ -114,8 +114,8 @@ public class DirTest {
 
         PeerSet myPeerSet = new StaticPeerSet(myPeers);
 
-        Directory myPeer1Dir = new Directory(myPeer1, myPeerSet);
-        Directory myPeer2Dir = new Directory(myPeer2, myPeerSet);
+        Directory myPeer1Dir = new Directory(myPeer1, myPeerSet, 2000);
+        Directory myPeer2Dir = new Directory(myPeer2, myPeerSet, 2000);
         final AtomicInteger myEventCount = new AtomicInteger(0);
 
         GossipBarrier myBarrier1 = new GossipBarrier();
