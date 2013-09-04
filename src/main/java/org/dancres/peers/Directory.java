@@ -15,6 +15,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.Writer;
 import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.*;
@@ -58,6 +60,17 @@ public class Directory implements Peer.Service {
 
     public Peer.ServiceDispatcher getDispatcher() {
         return _dispatcher;
+    }
+
+    public void walk(Writer aWriter) throws IOException {
+        PrintWriter myWriter = new PrintWriter(aWriter, false);
+        Map<String, Entry> aDir = getDirectory();
+
+        for (String aPN: aDir.keySet()) {
+            myWriter.print("Peer: " + aPN);
+            myWriter.print(aDir.get(aPN));
+            myWriter.print("");
+        }
     }
 
     public static class Entry {
