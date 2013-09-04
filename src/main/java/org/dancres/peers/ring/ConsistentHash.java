@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
  * the hash ring for whatever purpose is intended.</p>
  */
 public class ConsistentHash {
-    private static final String RING_MEMBERSHIP = "org.dancres.peers.ring.consistentHash.ringMembership";
+    private static final String RING_MEMBERSHIP_BASE = "org.dancres.peers.ring.consistentHash.ringMembership";
 
     private static final Logger _logger = LoggerFactory.getLogger(ConsistentHash.class);
 
@@ -94,17 +94,19 @@ public class ConsistentHash {
 
     private final Packager _packager;
     private final PositionGenerator _positionGenerator;
+    private final String _ringName;
 
-    public ConsistentHash(Peer aPeer, PositionGenerator aGenerator, PositionPacker aPacker) {
+    public ConsistentHash(Peer aPeer, PositionGenerator aGenerator, PositionPacker aPacker, String aRingName) {
         if (aGenerator == null)
             throw new IllegalArgumentException("Generator cannot be null");
 
         if (aPacker == null)
             throw new IllegalArgumentException("Packer cannot be null");
 
+        _ringName = RING_MEMBERSHIP_BASE + "." + aRingName;
         _peer = aPeer;
         _positionGenerator = aGenerator;
-        _packager = new Packager(aPacker, RING_MEMBERSHIP);
+        _packager = new Packager(aPacker, _ringName);
         _dir = (Directory) aPeer.find(Directory.class);
 
         if (_dir == null)
@@ -117,6 +119,10 @@ public class ConsistentHash {
     }
 
     public ConsistentHash(Peer aPeer) {
+        this(aPeer, "DefaultRing");
+    }
+
+    public ConsistentHash(Peer aPeer, String aRingName) {
         this(aPeer,
                 new PositionGenerator() {
                     private Random _rng = new Random();
@@ -134,7 +140,8 @@ public class ConsistentHash {
                     public String pack(Comparable anId) {
                         return anId.toString();
                     }
-                }
+                },
+                aRingName
         );
     }
 
@@ -142,7 +149,7 @@ public class ConsistentHash {
         public Map<String, String> produce() {
             Map<String, String> myFlattenedRingPosns = new HashMap<String, String>();
 
-            myFlattenedRingPosns.put(RING_MEMBERSHIP,
+            myFlattenedRingPosns.put(_ringName,
                     _packager.flattenRingPositions(_ringPositions.get(_peer.getAddress())));
 
             return myFlattenedRingPosns;
@@ -161,7 +168,7 @@ public class ConsistentHash {
             //
             for (Directory.Entry aNewEntry : Iterables.filter(aNewPeers, new Predicate<Directory.Entry>() {
                 public boolean apply(Directory.Entry entry) {
-                    return entry.getAttributes().containsKey(RING_MEMBERSHIP);
+                    return entry.getAttributes().containsKey(_ringName);
                 }
             })) {
                 RingPositions myPeerPositions = _packager.extractRingPositions(aNewEntry);
@@ -181,7 +188,7 @@ public class ConsistentHash {
             //
             for (Directory.Entry anUpdatedEntry : Iterables.filter(anUpdatedPeers, new Predicate<Directory.Entry>() {
                 public boolean apply(Directory.Entry entry) {
-                    return entry.getAttributes().containsKey(RING_MEMBERSHIP);
+                    return entry.getAttributes().containsKey(_ringName);
                 }
             })) {
                 RingPositions myPeerPositions = _packager.extractRingPositions(anUpdatedEntry);
