@@ -113,6 +113,9 @@ public class ConsistentHash {
      * @param aRingName
      */
     public ConsistentHash(Peer aPeer, PositionGenerator aGenerator, PositionPacker aPacker, String aRingName) {
+        if (aRingName == null)
+            throw new IllegalArgumentException("Name cannot be null");
+
         if (aGenerator == null)
             throw new IllegalArgumentException("Generator cannot be null");
 
