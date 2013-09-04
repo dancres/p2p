@@ -27,10 +27,17 @@ public class ConsistentHash {
 
     private static final Logger _logger = LoggerFactory.getLogger(ConsistentHash.class);
 
+    /**
+     * Responsible for creating candidate positions on a ring, collision detection is done in the hash ring
+     * implementation.
+     */
     public static interface PositionGenerator {
         public Comparable newId();
     }
 
+    /**
+     * Responsible for marshalling and unmarshalling positions produced by an associated generator.
+     */
     public static interface PositionPacker {
         public Comparable unpack(String aPacked);
         public String pack(Comparable anId);
@@ -96,6 +103,15 @@ public class ConsistentHash {
     private final PositionGenerator _positionGenerator;
     private final String _ringName;
 
+    /**
+     * Create a ring on a peer with a specified name and using positions created by a generator and marshalled via
+     * a packer. The generator and packer must be correctly paired together.
+     *
+     * @param aPeer
+     * @param aGenerator
+     * @param aPacker
+     * @param aRingName
+     */
     public ConsistentHash(Peer aPeer, PositionGenerator aGenerator, PositionPacker aPacker, String aRingName) {
         if (aGenerator == null)
             throw new IllegalArgumentException("Generator cannot be null");
@@ -118,10 +134,21 @@ public class ConsistentHash {
         _dir.add(new DirListenerImpl());
     }
 
+    /**
+     * Create a ring on the specified peer named "DefaultRing" and with positions represented as <code>Integer</code>s
+     *
+     * @param aPeer
+     */
     public ConsistentHash(Peer aPeer) {
         this(aPeer, "DefaultRing");
     }
 
+    /**
+     * Create a ring on a peer with a specified name and using positions represented as <code>Integer</code>s
+     *
+     * @param aPeer
+     * @param aRingName
+     */
     public ConsistentHash(Peer aPeer, String aRingName) {
         this(aPeer,
                 new PositionGenerator() {
