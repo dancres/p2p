@@ -1,15 +1,14 @@
 package org.dancres.peers.ring;
 
 import com.ning.http.client.AsyncHttpClient;
+import org.dancres.peers.primitives.*;
 import org.junit.Assert;
 import org.dancres.peers.Directory;
 import org.dancres.peers.Peer;
 import org.dancres.peers.PeerSet;
-import org.dancres.peers.primitives.GossipBarrier;
-import org.dancres.peers.primitives.HttpServer;
-import org.dancres.peers.primitives.InProcessPeer;
-import org.dancres.peers.primitives.StaticPeerSet;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -19,6 +18,8 @@ import java.util.Timer;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ConsistentHashTest {
+    private static final Logger _logger = LoggerFactory.getLogger(ConsistentHashTest.class);
+
     @Test
     public void testListenerReject() throws Exception {
         HttpServer myServer = new HttpServer(new InetSocketAddress("localhost", 8081));
@@ -66,6 +67,9 @@ public class ConsistentHashTest {
         try {
             Thread.sleep(50);
         } catch (Exception anE) {
+            myPeer1Dir.walk(new LoggerWriter(_logger));
+            myPeer2Dir.walk(new LoggerWriter(_logger));
+
             Assert.fail();
         }
 
@@ -79,6 +83,9 @@ public class ConsistentHashTest {
         myBarrier2.await(myBarrier2.current());
         myBarrier1.await(myBarrier1.current());
         myBarrier2.await(myBarrier2.current());
+
+        myPeer1Dir.walk(new LoggerWriter(_logger));
+        myPeer2Dir.walk(new LoggerWriter(_logger));
 
         Assert.assertEquals(0, myPeer1RejectCount.get());
         Assert.assertEquals(1, myPeer2RejectCount.get());
@@ -141,6 +148,9 @@ public class ConsistentHashTest {
         myBarrier1.await(myBarr1Curr);
         myBarrier2.await(myBarr2Curr);
 
+        myPeer1Dir.walk(new LoggerWriter(_logger));
+        myPeer2Dir.walk(new LoggerWriter(_logger));
+
         Assert.assertEquals(2, myPeer1Dir.getDirectory().size());
         Assert.assertEquals(2, myPeer2Dir.getDirectory().size());
 
@@ -164,6 +174,9 @@ public class ConsistentHashTest {
         myBarrier2.await(myBarrier2.current());
         myBarrier1.await(myBarrier1.current());
         myBarrier2.await(myBarrier2.current());
+
+        myPeer1Dir.walk(new LoggerWriter(_logger));
+        myPeer2Dir.walk(new LoggerWriter(_logger));
 
         Assert.assertEquals(1, myPeer1NeighbourCount.get());
         Assert.assertEquals(1, myPeer2NeighbourCount.get());
@@ -245,6 +258,9 @@ public class ConsistentHashTest {
         myBarrier1.await(myBarr1Curr);
         myBarrier2.await(myBarr2Curr);
 
+        myPeer1Dir.walk(new LoggerWriter(_logger));
+        myPeer2Dir.walk(new LoggerWriter(_logger));
+
         // Directory is stable?
         //
         Assert.assertEquals(2, myPeer1Dir.getDirectory().size());
@@ -270,6 +286,9 @@ public class ConsistentHashTest {
             if ((myRing1.getRing().size() == 6) && (myRing2.getRing().size() == 6))
                 break;
         }
+
+        myPeer1Dir.walk(new LoggerWriter(_logger));
+        myPeer2Dir.walk(new LoggerWriter(_logger));
 
         Assert.assertEquals(6, myRing1.getRing().size());
         Assert.assertEquals(3, myRing1.getNeighbours().size());
@@ -328,6 +347,9 @@ public class ConsistentHashTest {
         myBarrier1.await(myBarr1Curr);
         myBarrier2.await(myBarr2Curr);
 
+        myPeer1Dir.walk(new LoggerWriter(_logger));
+        myPeer2Dir.walk(new LoggerWriter(_logger));
+
         Assert.assertEquals(2, myPeer1Dir.getDirectory().size());
         Assert.assertEquals(2, myPeer2Dir.getDirectory().size());
 
@@ -343,6 +365,9 @@ public class ConsistentHashTest {
 
         try {
             myRing2.createPosition(1);
+
+            myPeer1Dir.walk(new LoggerWriter(_logger));
+            myPeer2Dir.walk(new LoggerWriter(_logger));
 
             Assert.fail();
         } catch (CollisionException aCE) {
