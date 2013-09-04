@@ -14,6 +14,14 @@ import org.dancres.peers.Peer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Consistent Hash Ring implementation.
+ *
+ * <p>Each hash ring requires a unique name and there may be several hash rings active on a any given peer.</p>
+ *
+ * <p>Members of a hash ring needn't be servers i.e. maintain a set of positions, they can just be clients that use
+ * the hash ring for whatever purpose is intended.</p>
+ */
 public class ConsistentHash {
     private static final String RING_MEMBERSHIP = "org.dancres.peers.ring.consistentHash.ringMembership";
 
