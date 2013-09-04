@@ -2,6 +2,7 @@ package org.dancres.peers.primitives;
 
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.*;
+import org.jboss.netty.channel.socket.ServerSocketChannel;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.codec.http.*;
 import org.jboss.netty.util.CharsetUtil;
@@ -32,7 +33,7 @@ public class HttpServer {
         void process(HttpRequest aRequest, HttpResponse aResponse);
     }
 
-    private final ChannelFactory _channelFactory = new NioServerSocketChannelFactory(
+    private final NioServerSocketChannelFactory _channelFactory = new NioServerSocketChannelFactory(
             Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
 
     private final InetSocketAddress _bindAddress;
@@ -51,6 +52,11 @@ public class HttpServer {
         return _baseAddress;
     }
 
+    public void terminate() throws InterruptedException {
+        _channel.close().await();
+        _channelFactory.releaseExternalResources();
+    }
+
     private ChannelPipeline commsStack(ChannelPipeline aPipeline) {
         aPipeline.addLast("decoder", new HttpRequestDecoder());
         aPipeline.addLast("aggregator", new HttpChunkAggregator(1048576));
@@ -66,13 +72,13 @@ public class HttpServer {
     }
 
     private Channel init() throws InterruptedException {
-        Channel myChannel = _channelFactory.newChannel(commsStack(Channels.pipeline()));
+        ServerSocketChannel myChannel = _channelFactory.newChannel(commsStack(Channels.pipeline()));
+        myChannel.getConfig().setReuseAddress(true);
         myChannel.bind(_bindAddress).await();
         myChannel.getConfig().setPipelineFactory(Channels.pipelineFactory(commsStack(Channels.pipeline())));
 
         return myChannel;
     }
-
 
     class HttpRequestHandler extends SimpleChannelUpstreamHandler {
         public void messageReceived(ChannelHandlerContext aCtx, MessageEvent anE) {
