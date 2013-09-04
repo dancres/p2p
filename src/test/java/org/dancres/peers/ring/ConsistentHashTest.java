@@ -91,6 +91,8 @@ public class ConsistentHashTest {
 
         myPeer1.stop();
         myPeer2.stop();
+
+        myServer.terminate();
     }
 
     class RejectionCountingListenerImpl implements ConsistentHash.Listener {
@@ -193,6 +195,8 @@ public class ConsistentHashTest {
 
         myPeer1.stop();
         myPeer2.stop();
+
+        myServer.terminate();
     }
 
     class NeighbourCountingListenerImpl implements ConsistentHash.Listener {
@@ -275,6 +279,8 @@ public class ConsistentHashTest {
 
         myPeer1.stop();
         myPeer2.stop();
+
+        myServer.terminate();
     }
 
     class StabiliserImpl implements ConsistentHash.Listener {
@@ -345,5 +351,7 @@ public class ConsistentHashTest {
 
         myPeer1.stop();
         myPeer2.stop();
+
+        myServer.terminate();
     }
 }

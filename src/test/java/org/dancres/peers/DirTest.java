@@ -64,6 +64,8 @@ public class DirTest {
         Directory.Entry myPeer2Entry = myPeer2Dir.getDirectory().get(myPeer2.getAddress());
 
         Assert.assertNotSame(myPeer2Entry.getBorn(), myPeer2Entry.getTimestamp());
+
+        myServer.terminate();
     }
 
     @Test
@@ -94,6 +96,8 @@ public class DirTest {
         Assert.assertNotNull(myAttrs);
         Assert.assertNotNull(myAttrs.get("testAttr"));
         Assert.assertEquals("testValue", myAttrs.get("testAttr"));
+
+        myServer.terminate();
     }
 
     @Test
@@ -142,5 +146,7 @@ public class DirTest {
         Assert.assertEquals(2, myPeer2Dir.getDirectory().size());
 
         Assert.assertEquals(1, myEventCount.get());
+
+        myServer.terminate();
     }
 }

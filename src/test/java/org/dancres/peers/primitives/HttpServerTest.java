@@ -38,5 +38,7 @@ public class HttpServerTest {
         Thread.sleep(1000);
 
         Assert.assertTrue(_success);
+
+        myServer.terminate();
     }
 }

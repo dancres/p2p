@@ -51,6 +51,8 @@ public class InProcessPeerTest {
         Thread.sleep(1000);
 
         Assert.assertTrue(_success);
+
+        myServer.terminate();
     }
 
     class TestImpl implements Peer.Service {
