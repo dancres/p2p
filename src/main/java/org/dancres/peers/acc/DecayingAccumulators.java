@@ -211,7 +211,7 @@ public class DecayingAccumulators implements Peer.Service {
 
         if (mySamples == null) {
             Queue<Docket> myInitial = new ConcurrentLinkedQueue<>();
-            Queue<Docket> myResult = _collectedSamples.put(myId, myInitial);
+            Queue<Docket> myResult = _collectedSamples.putIfAbsent(myId, myInitial);
 
             mySamples = ((myResult == null) ? myInitial : myResult);
         }
