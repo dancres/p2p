@@ -27,7 +27,7 @@ import java.util.concurrent.Future;
 public class DecayingAccumulators implements Peer.Service {
     private static final Logger _logger = LoggerFactory.getLogger(DecayingAccumulators.class);
 
-    public static class Count {
+    public static class Count implements Comparable<Count> {
         private final String _accumulatorId;
         private final long _samplePeriodInMillis;
         private final long _count;
@@ -53,6 +53,19 @@ public class DecayingAccumulators implements Peer.Service {
 
         public long getCount() {
             return _count;
+        }
+
+        public String toString() {
+            return "ID: " + _accumulatorId + ", Period: " + _samplePeriodInMillis + ", Count: " + _count;
+        }
+
+        public int compareTo(Count aCount) {
+            if (_count < aCount._count)
+                return -1;
+            else if (_count > aCount._count)
+                return 1;
+            else
+                return 0;
         }
     }
 
