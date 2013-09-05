@@ -382,7 +382,7 @@ public class ConsistentHashTest {
 
     @Test
     public void testGetsStableWithName() throws Exception {
-        HttpServer myServer = new HttpServer(new InetSocketAddress("localhost", 8083));
+        HttpServer myServer = new HttpServer(new InetSocketAddress("localhost", 8085));
         AsyncHttpClient myClient = new AsyncHttpClient();
         GossipBarrier myBarrier1 = new GossipBarrier();
         GossipBarrier myBarrier2 = new GossipBarrier();
