@@ -459,8 +459,9 @@ public class ConsistentHash {
     /**
      * @return this peer's current view of the ring
      */
-    public Collection<RingPosition> getRing() {
-        return Collections.unmodifiableCollection(computeRing(_ringPositions)._newRing.values());
+    public SortedSet<RingPosition> getRing() {
+        return Collections.unmodifiableSortedSet(
+                new TreeSet<>(computeRing(_ringPositions)._newRing.values()));
     }
 
     /**
