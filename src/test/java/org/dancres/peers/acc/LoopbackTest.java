@@ -17,9 +17,7 @@ public class LoopbackTest {
         AsyncHttpClient myClient = new AsyncHttpClient();
         Peer myPeer1 = new InProcessPeer(myServer, myClient, "/peer1", new Timer());
 
-        myPeer1.add(new DecayingAccumulators(myPeer1, 2000));
-
-        DecayingAccumulators myCounts = (DecayingAccumulators) myPeer1.find(DecayingAccumulators.class);
+        DecayingAccumulators myCounts = new DecayingAccumulators(myPeer1, 2000);
 
         DecayingAccumulators.Count myTotal = myCounts.log(myPeer1.getAddress(),
                 new DecayingAccumulators.Count("a", 1000, 1000));

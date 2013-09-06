@@ -49,7 +49,6 @@ public class LimitTest {
         for (int i = 0; i < _peers.length; i++) {
             _peers[i] = new InProcessPeer(_server, myClient, "/peer" + Integer.toString(i), new Timer());
             _accs[i] = new DecayingAccumulators(_peers[i], WINDOW_SIZE);
-            _peers[i].add(_accs[i]);
         }
 
         _total = new Total(MAX_REQUESTS_PER_PERIOD);

@@ -107,6 +107,7 @@ public class DecayingAccumulators implements Peer.Service {
         _peer = aPeer;
         _dispatcher = new Dispatcher();
         _window = aQuantum;
+        _peer.add(this);
     }
 
     public String getAddress() {
