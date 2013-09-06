@@ -11,10 +11,8 @@ import org.jboss.netty.util.CharsetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Iterator;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Future;
 
 /**
@@ -88,7 +86,7 @@ public class DecayingAccumulators implements Peer.Service {
     }
 
     private final Peer.ServiceDispatcher _dispatcher;
-    private final ConcurrentHashMap<String, Queue<Docket>> _collectedSamples = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, List<Docket>> _collectedSamples = new ConcurrentHashMap<>();
     private final Peer _peer;
     private final long _window;
 
@@ -205,48 +203,71 @@ public class DecayingAccumulators implements Peer.Service {
         }
     }
 
-    private Queue<Docket> getAndCreateDocketList(Count aCount) {
-        String myId = aCount.getAccumulatorId();
-        Queue<Docket> mySamples = _collectedSamples.get(myId);
-
-        if (mySamples == null) {
-            Queue<Docket> myInitial = new ConcurrentLinkedQueue<>();
-            Queue<Docket> myResult = _collectedSamples.putIfAbsent(myId, myInitial);
-
-            mySamples = ((myResult == null) ? myInitial : myResult);
-        }
-
-        return mySamples;
-    }
-
+    /*
+     * These two methods maintain immutable lists of samples such that if something is added or removed, a new list
+     * is created and placed in the ConcurrentMap.
+     *
+     * The opportunity to remove an empty list from the ConcurrentMap is taken within reduce() exploiting the fact
+     * that concurrent updates perform testAndSet replace or remove. Winners cause losers to retry their updates in the
+     * case of add() or just give up in the case of reduce() (because the work can be performed again later without
+     * much harm).
+     */
     private Count add(Count aCount) {
-        Queue<Docket> myDockets = getAndCreateDocketList(aCount);
+        String myId = aCount.getAccumulatorId();
 
-        myDockets.add(new Docket(aCount));
+        while (true) {
+            List<Docket> mySamples = _collectedSamples.get(myId);
+
+            if (mySamples == null) {
+                List<Docket> myInitial = new LinkedList<>();
+                myInitial.add(new Docket(aCount));
+                List<Docket> myResult = _collectedSamples.putIfAbsent(myId, Collections.unmodifiableList(myInitial));
+
+                if (myResult == null)
+                    break;
+            } else {
+                List<Docket> myReplace = new LinkedList<>(mySamples);
+                myReplace.add(new Docket(aCount));
+
+                if (_collectedSamples.replace(myId, mySamples, Collections.unmodifiableList(myReplace)));
+                    break;
+            }
+        }
 
         return reduce(aCount.getAccumulatorId());
     }
 
     private Count reduce(String anId) {
-        Queue<Docket> myDockets = _collectedSamples.get(anId);
+        List<Docket> myDockets = _collectedSamples.get(anId);
 
         if (myDockets == null)
             return new Count(anId, _window, 0);
+        else {
+            List<Docket> myReduced = new LinkedList<>(myDockets);
 
-        long myMinimumAge = System.currentTimeMillis() - _window;
-        long myTotal = 0;
+            long myMinimumAge = System.currentTimeMillis() - _window;
+            long myTotal = 0;
 
-        Iterator<Docket> myCurrentSamples = myDockets.iterator();
-        while (myCurrentSamples.hasNext()) {
-            Docket myDocket = myCurrentSamples.next();
+            Iterator<Docket> myCurrentSamples = myReduced.iterator();
+            while (myCurrentSamples.hasNext()) {
+                Docket myDocket = myCurrentSamples.next();
 
-            if (myDocket.isCurrent(myMinimumAge)) {
-                myTotal += myDocket.getSample().getCount();
-            } else {
-                myCurrentSamples.remove();
+                if (myDocket.isCurrent(myMinimumAge)) {
+                    myTotal += myDocket.getSample().getCount();
+                } else {
+                    myCurrentSamples.remove();
+                }
             }
-        }
 
-        return new Count(anId, _window, myTotal);
+            // Either of these can fail, that's fine, it means someone else has done a clean via reduce or add
+            //
+            if (myReduced.size() == 0)
+                _collectedSamples.remove(anId, myDockets);
+            else
+                _collectedSamples.replace(anId, myDockets, Collections.unmodifiableList(myReduced));
+
+
+            return new Count(anId, _window, myTotal);
+        }
     }
 }
