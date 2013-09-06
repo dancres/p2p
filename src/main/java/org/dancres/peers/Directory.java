@@ -124,6 +124,8 @@ public class Directory implements Peer.Service {
     private final ConcurrentMap<String, Entry> _directory = new ConcurrentHashMap<String, Entry>();
 
     /**
+     * Creates a gossip-based directory on the specified peer (invokes <code>Peer.add</code> at construction).
+     *
      * @param aPeer is the peer that will be advertised by this directory service.
      * @param aPeerSet is the set of peers that will co-operate in providing the directory service (which may be a
      *                 subset of the peers registered with and using the directory service).
@@ -132,6 +134,14 @@ public class Directory implements Peer.Service {
         this(aPeer, aPeerSet, DEFAULT_GOSSIP_PERIOD);
     }
 
+    /**
+     * Creates a gossip-based directory on the specified peer (invokes <code>Peer.add</code> at construction).
+     *
+     * @param aPeer is the peer that will be advertised by this directory service.
+     * @param aPeerSet is the set of peers that will co-operate in providing the directory service (which may be a
+     *                 subset of the peers registered with and using the directory service).
+     * @param aGossipPeriod the period of time in milliseconds between gossip rounds.
+     */
     public Directory(Peer aPeer, PeerSet aPeerSet, long aGossipPeriod) {
         _peers = aPeerSet;
         _peer = aPeer;

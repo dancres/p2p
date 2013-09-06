@@ -91,7 +91,8 @@ public class DecayingAccumulators implements Peer.Service {
     private final long _window;
 
     /**
-     * Use this method to setup a client or a server with a default window of 60 seconds.
+     * Use this method to setup a client or a server with a default window of 60 seconds on the specified peer.
+     * (invokes <code>Peer.add</code> at construction).
      *
      * @param aPeer to bind this service to
      */
@@ -100,8 +101,11 @@ public class DecayingAccumulators implements Peer.Service {
     }
 
     /**
+     * Use this method to setup a client or a server with a specified window on the specified peer.
+     * (invokes <code>Peer.add</code> at construction).
+     *
      * @param aPeer to bind this service to
-     * @param aQuantum the window over which counts are accumulated.
+     * @param aQuantum the window over which counts are accumulated in milliseconds
      */
     public DecayingAccumulators(Peer aPeer, long aQuantum) {
         _peer = aPeer;

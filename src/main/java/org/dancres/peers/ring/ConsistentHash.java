@@ -21,6 +21,9 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Members of a hash ring needn't be servers i.e. maintain a set of positions, they can just be clients that use
  * the hash ring for whatever purpose is intended.</p>
+ *
+ * <p><b>Note:</b> This implementation is dependent upon a <code>Directory</code> service having been instantiated on
+ * the peer previously.</p>
  */
 public class ConsistentHash {
     private static final String RING_MEMBERSHIP_BASE = "org.dancres.peers.ring.consistentHash.ringMembership";
