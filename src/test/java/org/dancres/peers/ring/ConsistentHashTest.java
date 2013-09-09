@@ -12,9 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.Timer;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ConsistentHashTest {
@@ -30,7 +28,7 @@ public class ConsistentHashTest {
         Peer myPeer1 = new InProcessPeer(myServer, myClient, "/peer1", new Timer());
         Peer myPeer2 = new InProcessPeer(myServer, myClient, "/peer2", new Timer());
 
-        Set<URI> myPeers = new HashSet<URI>();
+        Set<URI> myPeers = new HashSet<>();
         myPeers.add(myPeer1.getURI());
         myPeers.add(myPeer2.getURI());
 
@@ -128,7 +126,7 @@ public class ConsistentHashTest {
         GossipBarrier myBarrier1 = new GossipBarrier();
         GossipBarrier myBarrier2 = new GossipBarrier();
 
-        Set<URI> myPeers = new HashSet<URI>();
+        Set<URI> myPeers = new HashSet<>();
         myPeers.add(myPeer1.getURI());
         myPeers.add(myPeer2.getURI());
 
@@ -238,7 +236,7 @@ public class ConsistentHashTest {
         Peer myPeer1 = new InProcessPeer(myServer, myClient, "/peer1", new Timer());
         Peer myPeer2 = new InProcessPeer(myServer, myClient, "/peer2", new Timer());
 
-        Set<URI> myPeers = new HashSet<URI>();
+        Set<URI> myPeers = new HashSet<>();
         myPeers.add(myPeer1.getURI());
         myPeers.add(myPeer2.getURI());
 
@@ -327,7 +325,7 @@ public class ConsistentHashTest {
         Peer myPeer1 = new InProcessPeer(myServer, myClient, "/peer1", new Timer());
         Peer myPeer2 = new InProcessPeer(myServer, myClient, "/peer2", new Timer());
 
-        Set<URI> myPeers = new HashSet<URI>();
+        Set<URI> myPeers = new HashSet<>();
         myPeers.add(myPeer1.getURI());
         myPeers.add(myPeer2.getURI());
 
@@ -390,7 +388,7 @@ public class ConsistentHashTest {
         Peer myPeer1 = new InProcessPeer(myServer, myClient, "/peer1", new Timer());
         Peer myPeer2 = new InProcessPeer(myServer, myClient, "/peer2", new Timer());
 
-        Set<URI> myPeers = new HashSet<URI>();
+        Set<URI> myPeers = new HashSet<>();
         myPeers.add(myPeer1.getURI());
         myPeers.add(myPeer2.getURI());
 
