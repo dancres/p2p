@@ -516,12 +516,24 @@ public class ConsistentHash {
     }
 
     /**
-     * Takes a hashCode and returns the container to allocate it to.
+     * Takes a hashcode and returns the position to allocate it to.
      *
      * @param aHashCode
      * @return
      */
-    public Collection<RingPosition> allocate(Comparable aHashCode, int aReplicationCount) {
+    public RingPosition allocate(Comparable aHashCode) {
+        return allocate(aHashCode, 1).get(0);
+    }
+
+    /**
+     * Takes a hashcode and returns the position(s) to allocate it to.
+     *
+     * @param aHashCode
+     * @param aReplicationCount the number of positions to return
+     *
+     * @return a list of positions
+     */
+    public List<RingPosition> allocate(Comparable aHashCode, int aReplicationCount) {
         TreeSet<RingPosition> myPositions = new TreeSet<RingPosition>(computeRing(_ringPositions)._newRing.values());
 
         if (myPositions.size() == 0)
@@ -548,7 +560,7 @@ public class ConsistentHash {
         throw new RuntimeException("Logical error in code");
     }
 
-    private Collection<RingPosition> extract(TreeSet<RingPosition> aList, RingPosition aFirst, int aNumber) {
+    private List<RingPosition> extract(TreeSet<RingPosition> aList, RingPosition aFirst, int aNumber) {
         LinkedList<RingPosition> myResults = new LinkedList<>();
         int myTotal = 1;
 
