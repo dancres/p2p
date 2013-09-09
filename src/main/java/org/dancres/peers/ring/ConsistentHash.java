@@ -524,18 +524,24 @@ public class ConsistentHash {
     public RingPosition allocate(Comparable aHashCode) {
         SortedSet<RingPosition> myPositions = new TreeSet<RingPosition>(computeRing(_ringPositions)._newRing.values());
 
-        // If aHashCode is greater than the greatest position, it wraps around to the first
-        //
-        if (myPositions.last().getPosition().compareTo(aHashCode) < 1)
-            return myPositions.first();
+        if (myPositions.size() == 0)
+            throw new IllegalStateException("Haven't got any positions to allocate to");
         else {
-            for (RingPosition myPos : myPositions) {
-                if (myPos.getPosition().compareTo(aHashCode) == 1) {
-                    return myPos;
+            // If aHashCode is greater than the greatest position, it wraps around to the first
+            //
+            if (myPositions.last().getPosition().compareTo(aHashCode) < 1)
+                return myPositions.first();
+            else {
+                for (RingPosition myPos : myPositions) {
+                    if (myPos.getPosition().compareTo(aHashCode) >= 1) {
+                        return myPos;
+                    }
                 }
             }
         }
 
-        throw new RuntimeException("Impossible but the compiler is too stupid to know");
+        // Shouldn't happen
+        //
+        throw new RuntimeException("Logical error in code");
     }
 }
