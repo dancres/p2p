@@ -451,4 +451,95 @@ public class ConsistentHashTest {
 
         myServer.terminate();
     }
+
+    @Test
+    public void testAllocation() throws Exception {
+        HttpServer myServer = new HttpServer(new InetSocketAddress("localhost", 8086));
+        AsyncHttpClient myClient = new AsyncHttpClient();
+        GossipBarrier myBarrier1 = new GossipBarrier();
+        GossipBarrier myBarrier2 = new GossipBarrier();
+
+        Peer myPeer1 = new InProcessPeer(myServer, myClient, "/peer1", new Timer());
+        Peer myPeer2 = new InProcessPeer(myServer, myClient, "/peer2", new Timer());
+
+        Set<URI> myPeers = new HashSet<>();
+        myPeers.add(myPeer1.getURI());
+        myPeers.add(myPeer2.getURI());
+
+        PeerSet myPeerSet = new StaticPeerSet(myPeers);
+
+        Directory myPeer1Dir = new Directory(myPeer1, myPeerSet, 500);
+        Directory myPeer2Dir = new Directory(myPeer2, myPeerSet, 500);
+
+        myPeer1Dir.add(myBarrier1);
+        myPeer2Dir.add(myBarrier2);
+
+        int myBarr1Curr = myBarrier1.current();
+        int myBarr2Curr = myBarrier2.current();
+
+        myPeer1Dir.start();
+
+        myBarrier1.await(myBarr1Curr);
+        myBarrier2.await(myBarr2Curr);
+
+        ConsistentHash myRing1 = new ConsistentHash(myPeer1);
+        ConsistentHash myRing2 = new ConsistentHash(myPeer2);
+
+        myRing1.add(new StabiliserImpl());
+        myRing2.add(new StabiliserImpl());
+
+        for (int i = 0; i < 3; i++) {
+            myRing1.createPosition();
+            myRing2.createPosition();
+        }
+
+        // Allow some gossip time so that this ring position has "taken" across the cluster of peers
+        //
+        for (int i = 0; i < 10; i++) {
+            myBarrier1.await(myBarrier1.current());
+            myBarrier2.await(myBarrier2.current());
+
+            if ((myRing1.getRing().size() == 6) && (myRing2.getRing().size() == 6))
+                break;
+        }
+
+        Assert.assertEquals(6, myRing1.getRing().size());
+        Assert.assertEquals(3, myRing1.getNeighbours().size());
+
+        Assert.assertEquals(6, myRing2.getRing().size());
+        Assert.assertEquals(3, myRing2.getNeighbours().size());
+
+        // Ring is stable, we can proceed....
+        SortedSet<RingPosition> myRing = myRing1.getRing();
+
+        try {
+            // Should mean we grab some number of positions from first
+            //
+            int myHash1 = ((int) myRing.first().getPosition()) - 1;
+
+            // Should mean we grab some number of positions from last
+            //
+            int myHash2 = ((int) myRing.last().getPosition()) - 1;
+
+            Collection<RingPosition> myResults = myRing1.allocate(myHash1, 3);
+
+            // Test for size and uniqueness
+            //
+            Assert.assertEquals(3, myResults.size());
+            Assert.assertEquals(3, new HashSet<>(myResults).size());
+
+            myResults = myRing1.allocate(myHash2, 3);
+
+            Assert.assertEquals(3, myResults.size());
+            Assert.assertEquals(3, new HashSet<>(myResults).size());
+
+        } catch (Throwable aT) {
+            Assert.fail();
+        }
+
+        myPeer1.stop();
+        myPeer2.stop();
+
+        myServer.terminate();
+    }
 }

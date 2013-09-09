@@ -521,21 +521,24 @@ public class ConsistentHash {
      * @param aHashCode
      * @return
      */
-    public RingPosition allocate(Comparable aHashCode) {
-        SortedSet<RingPosition> myPositions = new TreeSet<RingPosition>(computeRing(_ringPositions)._newRing.values());
+    public Collection<RingPosition> allocate(Comparable aHashCode, int aReplicationCount) {
+        TreeSet<RingPosition> myPositions = new TreeSet<RingPosition>(computeRing(_ringPositions)._newRing.values());
 
         if (myPositions.size() == 0)
             throw new IllegalStateException("Haven't got any positions to allocate to");
+
+        if (myPositions.size() < aReplicationCount)
+            throw new IllegalStateException("Haven't got enough positions for the specified replication count: " +
+             aReplicationCount);
+
+        // If aHashCode is greater than the greatest position, it wraps around to the first
+        //
+        if (myPositions.last().getPosition().compareTo(aHashCode) < 1)
+            return extract(myPositions, myPositions.first(), aReplicationCount);
         else {
-            // If aHashCode is greater than the greatest position, it wraps around to the first
-            //
-            if (myPositions.last().getPosition().compareTo(aHashCode) < 1)
-                return myPositions.first();
-            else {
-                for (RingPosition myPos : myPositions) {
-                    if (myPos.getPosition().compareTo(aHashCode) >= 1) {
-                        return myPos;
-                    }
+            for (RingPosition myPos : myPositions) {
+                if (myPos.getPosition().compareTo(aHashCode) >= 1) {
+                    return extract(myPositions, myPos, aReplicationCount);
                 }
             }
         }
@@ -543,5 +546,28 @@ public class ConsistentHash {
         // Shouldn't happen
         //
         throw new RuntimeException("Logical error in code");
+    }
+
+    private Collection<RingPosition> extract(TreeSet<RingPosition> aList, RingPosition aFirst, int aNumber) {
+        LinkedList<RingPosition> myResults = new LinkedList<>();
+        int myTotal = 1;
+
+        myResults.add(aFirst);
+
+        while (myTotal < aNumber) {
+            RingPosition myNext = aList.higher(myResults.getLast());
+
+            if (myNext == null) {
+                // Wrap
+                //
+                myResults.add(aList.first());
+            } else {
+                myResults.add(myNext);
+            }
+
+            myTotal++;
+        }
+
+        return myResults;
     }
 }
