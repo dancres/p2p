@@ -300,21 +300,6 @@ public class ConsistentHashTest {
         myServer.terminate();
     }
 
-    class StabiliserImpl implements ConsistentHash.Listener {
-        public void newNeighbour(ConsistentHash aRing, RingPosition anOwnedPosition,
-                                 RingPosition aNeighbourPosition) {
-            // Doesn't matter
-        }
-
-        public void rejected(ConsistentHash aRing, RingPosition anOwnedPosition) {
-            try {
-                aRing.createPosition();
-            } catch (Exception anE) {
-                throw new RuntimeException("Couldn't allocate a replacement position");
-            }
-        }
-    }
-
     @Test
     public void collisionDetection() throws Exception {
         HttpServer myServer = new HttpServer(new InetSocketAddress("localhost", 8084));
