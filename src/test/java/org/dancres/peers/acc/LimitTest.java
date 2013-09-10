@@ -1,9 +1,15 @@
 package org.dancres.peers.acc;
 
 import com.ning.http.client.AsyncHttpClient;
+import org.dancres.peers.Directory;
 import org.dancres.peers.Peer;
+import org.dancres.peers.PeerSet;
+import org.dancres.peers.primitives.GossipBarrier;
 import org.dancres.peers.primitives.HttpServer;
 import org.dancres.peers.primitives.InProcessPeer;
+import org.dancres.peers.primitives.StaticPeerSet;
+import org.dancres.peers.ring.ConsistentHash;
+import org.dancres.peers.ring.StabiliserImpl;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -11,10 +17,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.SortedSet;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.TreeSet;
+import java.net.URI;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -35,6 +39,9 @@ public class LimitTest {
     private static final Logger _logger = LoggerFactory.getLogger(LimitTest.class);
     private HttpServer _server;
     private Peer[] _peers;
+    private Directory[] _dirs;
+    private ConsistentHash[] _hashes;
+    private GossipBarrier[] _barriers;
     private Total _total;
     private DecayingAccumulators[] _accs;
 
@@ -45,6 +52,11 @@ public class LimitTest {
 
         _peers = new Peer[3];
         _accs = new DecayingAccumulators[3];
+        _dirs = new Directory[3];
+        _hashes = new ConsistentHash[3];
+        _barriers = new GossipBarrier[3];
+
+        _logger.info("Peers and Accs");
 
         for (int i = 0; i < _peers.length; i++) {
             _peers[i] = new InProcessPeer(_server, myClient, "/peer" + Integer.toString(i), new Timer());
@@ -52,6 +64,64 @@ public class LimitTest {
         }
 
         _total = new Total(MAX_REQUESTS_PER_PERIOD);
+
+        Set<URI> myPeers = new HashSet<>();
+        for (int i = 0; i < _peers.length; i++) {
+            myPeers.add(_peers[i].getURI());
+        }
+
+        PeerSet myPeerSet = new StaticPeerSet(myPeers);
+
+        _logger.info("Directories");
+
+        // Now we have some peers, get directories and barriers up
+        //
+        for (int i = 0; i < _peers.length; i++) {
+            _dirs[i] = new Directory(_peers[i], myPeerSet, 1000);
+            _barriers[i] = new GossipBarrier();
+            _dirs[i].add(_barriers[i]);
+            _dirs[i].start();
+        }
+
+        _logger.info("Hash Rings");
+
+        // Dirs are up, now consistent hash rings and positions
+        //
+        for (int i = 0; i < _peers.length; i++) {
+            _hashes[i] = new ConsistentHash(_peers[i]);
+            _hashes[i].add(new StabiliserImpl());
+
+            for (int j = 0; j < 3; j++) {
+                _hashes[i].createPosition();
+            }
+        }
+
+        _logger.info("Stability?");
+
+        // Now wait for things to settle
+        //
+        boolean amStable = false;
+
+        for (int i = 0; i < 10; i++) {
+            for (int j = 0; j < _barriers.length; j++) {
+                _logger.info("Barrier: " + j);
+                _barriers[j].await(_barriers[j].current());
+            }
+
+            amStable = true;
+            for (int j = 0; j < _hashes.length; j++) {
+                if (_hashes[j].getRing().size() != 9) {
+                    _logger.info("Ring " + _hashes[j] + " is at: " + _hashes[j].getRing().size());
+                    amStable = false;
+                }
+            }
+
+            if (amStable)
+                break;
+        }
+
+        if (! amStable)
+            throw new RuntimeException("Never got stable");
 
         // Use the local peer's timer to schedule our count updates
         //
