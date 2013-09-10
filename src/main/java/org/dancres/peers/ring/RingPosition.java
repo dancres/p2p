@@ -28,7 +28,7 @@ public class RingPosition implements Comparable {
         return _position;
     }
 
-    String getPeerName() {
+    public String getPeerAddress() {
         return _peerName;
     }
 

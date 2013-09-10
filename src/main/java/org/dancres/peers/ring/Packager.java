@@ -35,7 +35,7 @@ class Packager {
                                      JsonSerializationContext jsonSerializationContext) {
             JsonArray myArray = new JsonArray();
 
-            myArray.add(new JsonPrimitive(ringPosition.getPeerName()));
+            myArray.add(new JsonPrimitive(ringPosition.getPeerAddress()));
             myArray.add(new JsonPrimitive(_positionPacker.pack(ringPosition.getPosition())));
             myArray.add(new JsonPrimitive(ringPosition.getBirthDate()));
 
