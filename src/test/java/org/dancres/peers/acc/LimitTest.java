@@ -77,11 +77,11 @@ public class LimitTest {
         //
         for (Peer myPeer : _peers) {
             Directory myDir = new Directory(myPeer, myPeerSet, 1000);
-            GossipBarrier myBarrier = new GossipBarrier();
+            GossipBarrier myBarrier = new GossipBarrier(myDir);
 
             _dirs.add(myDir);
             _barriers.add(myBarrier);
-            myDir.add(myBarrier);
+
             myDir.start();
         }
 

@@ -30,11 +30,8 @@ public class DirTest {
 
         Directory myPeer1Dir = new Directory(myPeer1, myPeerSet, 2000);
         Directory myPeer2Dir = new Directory(myPeer2, myPeerSet, 2000);
-        GossipBarrier myBarrier1 = new GossipBarrier();
-        GossipBarrier myBarrier2 = new GossipBarrier();
-
-        myPeer1Dir.add(myBarrier1);
-        myPeer2Dir.add(myBarrier2);
+        GossipBarrier myBarrier1 = new GossipBarrier(myPeer1Dir);
+        GossipBarrier myBarrier2 = new GossipBarrier(myPeer2Dir);
 
         // We want some skew between birth time of directory and gossip time to test timestamp/liveness
         //
@@ -118,11 +115,8 @@ public class DirTest {
         Directory myPeer2Dir = new Directory(myPeer2, myPeerSet, 2000);
         final AtomicInteger myEventCount = new AtomicInteger(0);
 
-        GossipBarrier myBarrier1 = new GossipBarrier();
-        GossipBarrier myBarrier2 = new GossipBarrier();
-
-        myPeer1Dir.add(myBarrier1);
-        myPeer2Dir.add(myBarrier2);
+        GossipBarrier myBarrier1 = new GossipBarrier(myPeer1Dir);
+        GossipBarrier myBarrier2 = new GossipBarrier(myPeer2Dir);
 
         myPeer1Dir.add(new Directory.Listener() {
             public void updated(Directory aDirectory, List<Directory.Entry> aNewPeers,

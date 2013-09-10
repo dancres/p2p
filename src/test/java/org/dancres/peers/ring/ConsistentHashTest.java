@@ -22,8 +22,6 @@ public class ConsistentHashTest {
     public void testListenerReject() throws Exception {
         HttpServer myServer = new HttpServer(new InetSocketAddress("localhost", 8081));
         AsyncHttpClient myClient = new AsyncHttpClient();
-        GossipBarrier myBarrier1 = new GossipBarrier();
-        GossipBarrier myBarrier2 = new GossipBarrier();
 
         Peer myPeer1 = new InProcessPeer(myServer, myClient, "/peer1", new Timer());
         Peer myPeer2 = new InProcessPeer(myServer, myClient, "/peer2", new Timer());
@@ -37,8 +35,8 @@ public class ConsistentHashTest {
         Directory myPeer1Dir = new Directory(myPeer1, myPeerSet, 500);
         Directory myPeer2Dir = new Directory(myPeer2, myPeerSet, 500);
 
-        myPeer1Dir.add(myBarrier1);
-        myPeer2Dir.add(myBarrier2);
+        GossipBarrier myBarrier1 = new GossipBarrier(myPeer1Dir);
+        GossipBarrier myBarrier2 = new GossipBarrier(myPeer2Dir);
 
         int myBarr1Curr = myBarrier1.current();
         int myBarr2Curr = myBarrier2.current();
@@ -123,8 +121,6 @@ public class ConsistentHashTest {
 
         Peer myPeer1 = new InProcessPeer(myServer, myClient, "/peer1", new Timer());
         Peer myPeer2 = new InProcessPeer(myServer, myClient, "/peer2", new Timer());
-        GossipBarrier myBarrier1 = new GossipBarrier();
-        GossipBarrier myBarrier2 = new GossipBarrier();
 
         Set<URI> myPeers = new HashSet<>();
         myPeers.add(myPeer1.getURI());
@@ -135,8 +131,8 @@ public class ConsistentHashTest {
         Directory myPeer1Dir = new Directory(myPeer1, myPeerSet, 500);
         Directory myPeer2Dir = new Directory(myPeer2, myPeerSet, 500);
 
-        myPeer1Dir.add(myBarrier1);
-        myPeer2Dir.add(myBarrier2);
+        GossipBarrier myBarrier1 = new GossipBarrier(myPeer1Dir);
+        GossipBarrier myBarrier2 = new GossipBarrier(myPeer2Dir);
 
         int myBarr1Curr = myBarrier1.current();
         int myBarr2Curr = myBarrier2.current();
@@ -230,8 +226,6 @@ public class ConsistentHashTest {
     public void testGetsStable() throws Exception {
         HttpServer myServer = new HttpServer(new InetSocketAddress("localhost", 8083));
         AsyncHttpClient myClient = new AsyncHttpClient();
-        GossipBarrier myBarrier1 = new GossipBarrier();
-        GossipBarrier myBarrier2 = new GossipBarrier();
 
         Peer myPeer1 = new InProcessPeer(myServer, myClient, "/peer1", new Timer());
         Peer myPeer2 = new InProcessPeer(myServer, myClient, "/peer2", new Timer());
@@ -245,8 +239,8 @@ public class ConsistentHashTest {
         Directory myPeer1Dir = new Directory(myPeer1, myPeerSet, 500);
         Directory myPeer2Dir = new Directory(myPeer2, myPeerSet, 500);
 
-        myPeer1Dir.add(myBarrier1);
-        myPeer2Dir.add(myBarrier2);
+        GossipBarrier myBarrier1 = new GossipBarrier(myPeer1Dir);
+        GossipBarrier myBarrier2 = new GossipBarrier(myPeer2Dir);
 
         int myBarr1Curr = myBarrier1.current();
         int myBarr2Curr = myBarrier2.current();
@@ -304,8 +298,6 @@ public class ConsistentHashTest {
     public void collisionDetection() throws Exception {
         HttpServer myServer = new HttpServer(new InetSocketAddress("localhost", 8084));
         AsyncHttpClient myClient = new AsyncHttpClient();
-        GossipBarrier myBarrier1 = new GossipBarrier();
-        GossipBarrier myBarrier2 = new GossipBarrier();
 
         Peer myPeer1 = new InProcessPeer(myServer, myClient, "/peer1", new Timer());
         Peer myPeer2 = new InProcessPeer(myServer, myClient, "/peer2", new Timer());
@@ -319,8 +311,8 @@ public class ConsistentHashTest {
         Directory myPeer1Dir = new Directory(myPeer1, myPeerSet, 500);
         Directory myPeer2Dir = new Directory(myPeer2, myPeerSet, 500);
 
-        myPeer1Dir.add(myBarrier1);
-        myPeer2Dir.add(myBarrier2);
+        GossipBarrier myBarrier1 = new GossipBarrier(myPeer1Dir);
+        GossipBarrier myBarrier2 = new GossipBarrier(myPeer2Dir);
 
         int myBarr1Curr = myBarrier1.current();
         int myBarr2Curr = myBarrier2.current();
@@ -367,8 +359,6 @@ public class ConsistentHashTest {
     public void testGetsStableWithName() throws Exception {
         HttpServer myServer = new HttpServer(new InetSocketAddress("localhost", 8085));
         AsyncHttpClient myClient = new AsyncHttpClient();
-        GossipBarrier myBarrier1 = new GossipBarrier();
-        GossipBarrier myBarrier2 = new GossipBarrier();
 
         Peer myPeer1 = new InProcessPeer(myServer, myClient, "/peer1", new Timer());
         Peer myPeer2 = new InProcessPeer(myServer, myClient, "/peer2", new Timer());
@@ -382,8 +372,8 @@ public class ConsistentHashTest {
         Directory myPeer1Dir = new Directory(myPeer1, myPeerSet, 500);
         Directory myPeer2Dir = new Directory(myPeer2, myPeerSet, 500);
 
-        myPeer1Dir.add(myBarrier1);
-        myPeer2Dir.add(myBarrier2);
+        GossipBarrier myBarrier1 = new GossipBarrier(myPeer1Dir);
+        GossipBarrier myBarrier2 = new GossipBarrier(myPeer2Dir);
 
         int myBarr1Curr = myBarrier1.current();
         int myBarr2Curr = myBarrier2.current();
@@ -441,8 +431,6 @@ public class ConsistentHashTest {
     public void testAllocation() throws Exception {
         HttpServer myServer = new HttpServer(new InetSocketAddress("localhost", 8086));
         AsyncHttpClient myClient = new AsyncHttpClient();
-        GossipBarrier myBarrier1 = new GossipBarrier();
-        GossipBarrier myBarrier2 = new GossipBarrier();
 
         Peer myPeer1 = new InProcessPeer(myServer, myClient, "/peer1", new Timer());
         Peer myPeer2 = new InProcessPeer(myServer, myClient, "/peer2", new Timer());
@@ -456,8 +444,8 @@ public class ConsistentHashTest {
         Directory myPeer1Dir = new Directory(myPeer1, myPeerSet, 500);
         Directory myPeer2Dir = new Directory(myPeer2, myPeerSet, 500);
 
-        myPeer1Dir.add(myBarrier1);
-        myPeer2Dir.add(myBarrier2);
+        GossipBarrier myBarrier1 = new GossipBarrier(myPeer1Dir);
+        GossipBarrier myBarrier2 = new GossipBarrier(myPeer2Dir);
 
         int myBarr1Curr = myBarrier1.current();
         int myBarr2Curr = myBarrier2.current();

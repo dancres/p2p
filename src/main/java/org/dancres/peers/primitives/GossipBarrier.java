@@ -17,6 +17,15 @@ public class GossipBarrier implements Directory.Listener {
 
     private int _gossipCount = 0;
 
+    /**
+     * Create a barrier for a particular directory
+     *
+     * @param aDir is the directory to attach the barrier to
+     */
+    public GossipBarrier(Directory aDir) {
+        aDir.add(this);
+    }
+
     public void updated(Directory aDirectory, List<Directory.Entry> aNewPeers, List<Directory.Entry> anUpdatedPeers) {
         _lock.lock();
 
