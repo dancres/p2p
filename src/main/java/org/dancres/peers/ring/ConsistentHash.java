@@ -114,6 +114,8 @@ public class ConsistentHash {
      * @param aGenerator
      * @param aPacker
      * @param aRingName
+     *
+     * @throws RuntimeException if there is no <code>Directory</code> service registered on the specified peer
      */
     public ConsistentHash(Peer aPeer, PositionGenerator aGenerator, PositionPacker aPacker, String aRingName) {
         if (aRingName == null)
