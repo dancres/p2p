@@ -150,9 +150,6 @@ public class Directory implements Peer.Service {
         _gossipPeriod = aGossipPeriod;
     }
 
-    public long getGossipPeriod() {
-        return _gossipPeriod;
-    }
     /**
      * Ask the directory service to commence publishing of local peer details and collection of data about other peers.
      */
