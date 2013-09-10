@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * Example use of DecayingAccumulators
  */
 public class LimitTest {
+    private static final int MAX_PEERS = 3;
     private static final long PERIOD = 30000;
     private static final long SAMPLE = 5000;
 
@@ -38,37 +39,34 @@ public class LimitTest {
     private static final long MAX_REQUESTS_PER_PERIOD = 500000000;
 
     private static final Logger _logger = LoggerFactory.getLogger(LimitTest.class);
+
+    private final LinkedList<Peer> _peers = new LinkedList<>();
+    private final LinkedList<Directory> _dirs = new LinkedList<>();
+    private final LinkedList<ConsistentHash> _hashes = new LinkedList<>();
+    private final LinkedList<GossipBarrier> _barriers = new LinkedList<>();
+    private final LinkedList<DecayingAccumulators> _accs = new LinkedList<>();
+    private final Total _total = new Total(MAX_REQUESTS_PER_PERIOD);
+
     private HttpServer _server;
-    private Peer[] _peers;
-    private Directory[] _dirs;
-    private ConsistentHash[] _hashes;
-    private GossipBarrier[] _barriers;
-    private Total _total;
-    private DecayingAccumulators[] _accs;
 
     @Before
     public void init() throws Exception {
         _server = new HttpServer(new InetSocketAddress("localhost", 8081));
         AsyncHttpClient myClient = new AsyncHttpClient();
 
-        _peers = new Peer[3];
-        _accs = new DecayingAccumulators[3];
-        _dirs = new Directory[3];
-        _hashes = new ConsistentHash[3];
-        _barriers = new GossipBarrier[3];
-
         _logger.info("Peers and Accs");
 
-        for (int i = 0; i < _peers.length; i++) {
-            _peers[i] = new InProcessPeer(_server, myClient, "/peer" + Integer.toString(i), new Timer());
-            _accs[i] = new DecayingAccumulators(_peers[i], WINDOW_SIZE);
+        for (int i = 0; i < MAX_PEERS; i++) {
+            Peer myPeer = new InProcessPeer(_server, myClient, "/peer" + Integer.toString(i), new Timer());
+
+            _peers.add(myPeer);
+            _accs.add(new DecayingAccumulators(myPeer, WINDOW_SIZE));
         }
 
-        _total = new Total(MAX_REQUESTS_PER_PERIOD);
-
         Set<URI> myPeers = new HashSet<>();
-        for (int i = 0; i < _peers.length; i++) {
-            myPeers.add(_peers[i].getURI());
+
+        for (Peer myPeer : _peers) {
+            myPeers.add(myPeer.getURI());
         }
 
         PeerSet myPeerSet = new StaticPeerSet(myPeers);
@@ -77,23 +75,28 @@ public class LimitTest {
 
         // Now we have some peers, get directories and barriers up
         //
-        for (int i = 0; i < _peers.length; i++) {
-            _dirs[i] = new Directory(_peers[i], myPeerSet, 1000);
-            _barriers[i] = new GossipBarrier();
-            _dirs[i].add(_barriers[i]);
-            _dirs[i].start();
+        for (Peer myPeer : _peers) {
+            Directory myDir = new Directory(myPeer, myPeerSet, 1000);
+            GossipBarrier myBarrier = new GossipBarrier();
+
+            _dirs.add(myDir);
+            _barriers.add(myBarrier);
+            myDir.add(myBarrier);
+            myDir.start();
         }
 
         _logger.info("Hash Rings");
 
         // Dirs are up, now consistent hash rings and positions
         //
-        for (int i = 0; i < _peers.length; i++) {
-            _hashes[i] = new ConsistentHash(_peers[i]);
-            _hashes[i].add(new StabiliserImpl());
+        for (Peer myPeer : _peers) {
+            ConsistentHash myHash = new ConsistentHash(myPeer);
+
+            _hashes.add(myHash);
+            myHash.add(new StabiliserImpl());
 
             for (int j = 0; j < 3; j++) {
-                _hashes[i].createPosition();
+                myHash.createPosition();
             }
         }
 
@@ -104,15 +107,16 @@ public class LimitTest {
         boolean amStable = false;
 
         for (int i = 0; i < 10; i++) {
-            for (int j = 0; j < _barriers.length; j++) {
-                _barriers[j].await(_barriers[j].current());
+            for (GossipBarrier myBarrier : _barriers) {
+                myBarrier.await(myBarrier.current());
             }
 
             amStable = true;
-            for (int j = 0; j < _hashes.length; j++) {
-                int myHashSize = _hashes[j].getRing().size();
+            for (ConsistentHash myHash : _hashes) {
+                int myHashSize = myHash.getRing().size();
+
                 if (myHashSize != 9) {
-                    _logger.info("Ring " + _hashes[j] + " is currently at " + myHashSize + " need 9");
+                    _logger.info("Ring " + myHash + " is currently at " + myHashSize + " need 9");
                     amStable = false;
                 }
             }
@@ -124,17 +128,17 @@ public class LimitTest {
         if (! amStable)
             throw new RuntimeException("Never got stable");
 
-        _logger.info("Running with hashring: " + _hashes[0].getRing());
+        _logger.info("Running with hashring: " + _hashes.getFirst().getRing());
 
         // Use the local peer's timer to schedule our count updates
         //
-        _peers[0].getTimer().schedule(new Snapshotter(), 0, SAMPLE);
+        _peers.getFirst().getTimer().schedule(new Snapshotter(), 0, SAMPLE);
     }
 
     @After
     public void deInit() throws Exception {
-        for (int i = 0; i < _peers.length; i++)
-            _peers[i].stop();
+        for (Peer myPeer : _peers)
+            myPeer.stop();
 
         _server.terminate();
     }
@@ -201,7 +205,7 @@ public class LimitTest {
                 // Use the local hash ring to identify servers to use
                 //
                 Integer myHash = mySample.getAccumulatorId().hashCode();
-                List<RingPosition> myPositions = _hashes[0].allocate(myHash, 3);
+                List<RingPosition> myPositions = _hashes.getFirst().allocate(myHash, 3);
                 Set<String> myPeers = new HashSet<>();
 
                 // We do nothing to enforce a properly balanced hash ring so could end up with the same
@@ -219,7 +223,7 @@ public class LimitTest {
                 for (String myPeer: myPeers) {
                     // Use the local peer to send updates out to this peer and siblings
                     //
-                    myTotals.add(_accs[0].log(myPeer, mySample));
+                    myTotals.add(_accs.getFirst().log(myPeer, mySample));
                 }
 
                 _logger.info("New total: " + myTotals.last());
