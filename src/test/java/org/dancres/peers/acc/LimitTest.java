@@ -9,6 +9,7 @@ import org.dancres.peers.primitives.HttpServer;
 import org.dancres.peers.primitives.InProcessPeer;
 import org.dancres.peers.primitives.StaticPeerSet;
 import org.dancres.peers.ring.ConsistentHash;
+import org.dancres.peers.ring.RingPosition;
 import org.dancres.peers.ring.StabiliserImpl;
 import org.junit.After;
 import org.junit.Before;
@@ -196,13 +197,26 @@ public class LimitTest {
         public void run() {
             try {
                 DecayingAccumulators.Count mySample = _total.contribute();
-                _logger.info("Contributing: " + mySample);
+
+                // Use the local hash ring to identify servers to use
+                //
+                Integer myHash = mySample.getAccumulatorId().hashCode();
+                List<RingPosition> myPositions = _hashes[0].allocate(myHash, 3);
+                Set<String> myPeers = new HashSet<>();
+
+                // We do nothing to enforce a properly balanced hash ring so could end up with the same
+                // node more than once. We don't want to send the same sample more than once to any given peer
+                // otherwise we get duplicate counts and incorrect totals. So, de-dupe the peers...
+                //
+                for (RingPosition myPos: myPositions) {
+                    myPeers.add(myPos.getPeerAddress());
+                }
+
+                _logger.info("Contributing " + mySample + " to " + myPeers);
 
                 SortedSet<DecayingAccumulators.Count> myTotals = new TreeSet<>();
 
-                for (int i = 0; i < _peers.length; i++) {
-                    String myPeer = _peers[i].getAddress();
-
+                for (String myPeer: myPeers) {
                     // Use the local peer to send updates out to this peer and siblings
                     //
                     myTotals.add(_accs[0].log(myPeer, mySample));
