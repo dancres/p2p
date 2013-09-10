@@ -104,14 +104,14 @@ public class LimitTest {
 
         for (int i = 0; i < 10; i++) {
             for (int j = 0; j < _barriers.length; j++) {
-                _logger.info("Barrier: " + j);
                 _barriers[j].await(_barriers[j].current());
             }
 
             amStable = true;
             for (int j = 0; j < _hashes.length; j++) {
-                if (_hashes[j].getRing().size() != 9) {
-                    _logger.info("Ring " + _hashes[j] + " is at: " + _hashes[j].getRing().size());
+                int myHashSize = _hashes[j].getRing().size();
+                if (myHashSize != 9) {
+                    _logger.info("Ring " + _hashes[j] + " is currently at " + myHashSize + " need 9");
                     amStable = false;
                 }
             }
@@ -122,6 +122,8 @@ public class LimitTest {
 
         if (! amStable)
             throw new RuntimeException("Never got stable");
+
+        _logger.info("Running with hashring: " + _hashes[0].getRing());
 
         // Use the local peer's timer to schedule our count updates
         //
