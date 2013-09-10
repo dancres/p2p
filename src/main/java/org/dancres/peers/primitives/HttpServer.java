@@ -74,8 +74,13 @@ public class HttpServer {
     private Channel init() throws InterruptedException {
         ServerSocketChannel myChannel = _channelFactory.newChannel(commsStack(Channels.pipeline()));
         myChannel.getConfig().setReuseAddress(true);
+        myChannel.getConfig().setPipelineFactory(new ChannelPipelineFactory() {
+            public ChannelPipeline getPipeline() throws Exception {
+                return commsStack(Channels.pipeline());
+            }
+        });
+
         myChannel.bind(_bindAddress).await();
-        myChannel.getConfig().setPipelineFactory(Channels.pipelineFactory(commsStack(Channels.pipeline())));
 
         return myChannel;
     }
