@@ -234,7 +234,7 @@ public class DecayingAccumulators implements Peer.Service {
                 List<Docket> myReplace = new LinkedList<>(mySamples);
                 myReplace.add(new Docket(aCount));
 
-                if (_collectedSamples.replace(myId, mySamples, Collections.unmodifiableList(myReplace)));
+                if (_collectedSamples.replace(myId, mySamples, Collections.unmodifiableList(myReplace)))
                     break;
             }
         }
