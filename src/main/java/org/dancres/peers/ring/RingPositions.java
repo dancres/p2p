@@ -13,7 +13,7 @@ class RingPositions {
 
     RingPositions() {
         _generation = 0L;
-        _positions = new HashSet<RingPosition>();
+        _positions = new HashSet<>();
     }
 
     RingPositions(long aGeneration, HashSet<RingPosition> aPositions) {
@@ -26,14 +26,14 @@ class RingPositions {
     }
 
     RingPositions add(Collection<RingPosition> aPositions) {
-        HashSet<RingPosition> myPositions = new HashSet<RingPosition>(_positions);
+        HashSet<RingPosition> myPositions = new HashSet<>(_positions);
         myPositions.addAll(aPositions);
 
         return new RingPositions(_generation + 1, myPositions);
     }
 
     RingPositions remove(Collection<RingPosition> aPositions) {
-        HashSet<RingPosition> myPositions = new HashSet<RingPosition>(_positions);
+        HashSet<RingPosition> myPositions = new HashSet<>(_positions);
         myPositions.removeAll(aPositions);
 
         return new RingPositions(_generation + 1, myPositions);

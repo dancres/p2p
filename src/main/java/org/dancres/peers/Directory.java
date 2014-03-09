@@ -90,8 +90,8 @@ public class Directory implements Peer.Service {
     private final Peer _peer;
     private final Peer.ServiceDispatcher _dispatcher;
     private final long _birthTime = System.currentTimeMillis();
-    private final List<AttributeProducer> _producers = new CopyOnWriteArrayList<AttributeProducer>();
-    private final List<Listener> _listeners = new CopyOnWriteArrayList<Listener>();
+    private final List<AttributeProducer> _producers = new CopyOnWriteArrayList<>();
+    private final List<Listener> _listeners = new CopyOnWriteArrayList<>();
     private final long _gossipPeriod;
     private final long _nodeOverdueTime;
 
@@ -123,7 +123,7 @@ public class Directory implements Peer.Service {
         }
     }
 
-    private final ConcurrentMap<String, Entry> _directory = new ConcurrentHashMap<String, Entry>();
+    private final ConcurrentMap<String, Entry> _directory = new ConcurrentHashMap<>();
 
     /**
      * Creates a gossip-based directory on the specified peer (invokes <code>Peer.add</code> at construction).
@@ -164,7 +164,7 @@ public class Directory implements Peer.Service {
      * @return the attributes associated with this peer
      */
     public Map<String, String> getAttributes() {
-        HashMap<String, String> myAttrs = new HashMap<String, String>();
+        HashMap<String, String> myAttrs = new HashMap<>();
 
         for (AttributeProducer ap : _producers) {
             myAttrs.putAll(ap.produce());
@@ -177,7 +177,7 @@ public class Directory implements Peer.Service {
      * @return a directory of known peers
      */
     public Map<String, Entry> getDirectory() {
-        HashMap<String, Entry> myEntries = new HashMap<String, Entry>(_directory);
+        HashMap<String, Entry> myEntries = new HashMap<>(_directory);
 
         myEntries.put(_peer.getAddress().toString(),
                 new Entry(_peer.getAddress().toString(),
@@ -197,8 +197,8 @@ public class Directory implements Peer.Service {
     }
 
     private void merge(Map<String, Entry> aRemoteDirectory) {
-        final List<Entry> myUpdatedPeers = new LinkedList<Entry>();
-        final List<Entry> myNewPeers = new LinkedList<Entry>();
+        final List<Entry> myUpdatedPeers = new LinkedList<>();
+        final List<Entry> myNewPeers = new LinkedList<>();
 
         for (Map.Entry<String, Directory.Entry> kv : aRemoteDirectory.entrySet()) {
 

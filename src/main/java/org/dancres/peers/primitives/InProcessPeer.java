@@ -21,8 +21,8 @@ public class InProcessPeer implements Peer {
     private final HttpServer _server;
     private final Timer _timer;
     private final ConcurrentMap<String, ServiceDispatcher> _dispatchers =
-            new ConcurrentWeakKeyHashMap<String, ServiceDispatcher>();
-    private final ConcurrentMap<Class, Service> _services = new ConcurrentHashMap<Class, Service>();
+            new ConcurrentWeakKeyHashMap<>();
+    private final ConcurrentMap<Class, Service> _services = new ConcurrentHashMap<>();
     private final URI _fullAddress;
     private final String _peerAddress;
 

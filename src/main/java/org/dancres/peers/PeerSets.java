@@ -23,7 +23,7 @@ public class PeerSets {
         Set<URI> myBase = aSet.getPeers();
         myBase.remove(aLocal);
 
-        List<URI> myPeers = new LinkedList<URI>();
+        List<URI> myPeers = new LinkedList<>();
         myPeers.addAll(myBase);
 
         if (myPeers.size() > 0) {

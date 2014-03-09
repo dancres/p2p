@@ -26,7 +26,7 @@ public class DirTest {
         Peer myPeer1 = new InProcessPeer(myServer, myClient, "/peer1", new Timer());
         Peer myPeer2 = new InProcessPeer(myServer, myClient, "/peer2", new Timer());
 
-        Set<URI> myPeers = new HashSet<URI>();
+        Set<URI> myPeers = new HashSet<>();
         myPeers.add(myPeer1.getURI());
         myPeers.add(myPeer2.getURI());
 
@@ -76,7 +76,7 @@ public class DirTest {
 
         Peer myPeer1 = new InProcessPeer(myServer, myClient, "/peer1", new Timer());
 
-        Set<URI> myPeers = new HashSet<URI>();
+        Set<URI> myPeers = new HashSet<>();
         myPeers.add(myPeer1.getURI());
 
         PeerSet myPeerSet = new StaticPeerSet(myPeers);
@@ -85,7 +85,7 @@ public class DirTest {
 
         myPeer1Dir.add(new Directory.AttributeProducer() {
             public Map<String, String> produce() {
-                Map<String, String> myAttrs = new HashMap<String, String>();
+                Map<String, String> myAttrs = new HashMap<>();
 
                 myAttrs.put("testAttr", "testValue");
                 return myAttrs;
@@ -109,7 +109,7 @@ public class DirTest {
         Peer myPeer1 = new InProcessPeer(myServer, myClient, "/peer1", new Timer());
         Peer myPeer2 = new InProcessPeer(myServer, myClient, "/peer2", new Timer());
 
-        Set<URI> myPeers = new HashSet<URI>();
+        Set<URI> myPeers = new HashSet<>();
         myPeers.add(myPeer1.getURI());
         myPeers.add(myPeer2.getURI());
 

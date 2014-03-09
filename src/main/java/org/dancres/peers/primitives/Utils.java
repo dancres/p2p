@@ -21,7 +21,7 @@ public class Utils {
      */
     static {
         SortedSet<NetworkInterface> myWorkableInterfaces = 
-        	new TreeSet<NetworkInterface>(new NetworkInterfaceComparator());
+        	new TreeSet<>(new NetworkInterfaceComparator());
 
         try {
             Enumeration<NetworkInterface> myInterfaces = NetworkInterface.getNetworkInterfaces();

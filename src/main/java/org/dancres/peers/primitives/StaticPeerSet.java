@@ -14,21 +14,21 @@ public class StaticPeerSet implements PeerSet {
     private final Set<URI> _peerSet;
 
     public StaticPeerSet(Set<URI> aSet) {
-        Set<URI> mySet = new HashSet<URI>();
+        Set<URI> mySet = new HashSet<>();
         mySet.addAll(aSet);
 
         _peerSet = Collections.unmodifiableSet(mySet);
     }
 
     public Set<URI> getPeers() {
-        Set<URI> myClone = new HashSet<URI>();
+        Set<URI> myClone = new HashSet<>();
         myClone.addAll(_peerSet);
 
         return myClone;
     }
 
     public Set<String> getPeersAsStrings() {
-        Set<String> myClone = new HashSet<String>();
+        Set<String> myClone = new HashSet<>();
 
         for (URI aP : _peerSet)
             myClone.add(aP.toString());

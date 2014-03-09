@@ -40,7 +40,7 @@ public class HttpServer {
     private final URI _baseAddress;
 
     private final Channel _channel;
-    private final Map<String, Handler> _handlers = new ConcurrentHashMap<String, Handler>();
+    private final Map<String, Handler> _handlers = new ConcurrentHashMap<>();
 
     public HttpServer(InetSocketAddress aBindPoint) throws Exception {
         _bindAddress = aBindPoint;
@@ -181,7 +181,7 @@ public class HttpServer {
         }
 
         private List<String> paths(String aPath) {
-            List<String> myList = new LinkedList<String>();
+            List<String> myList = new LinkedList<>();
             String mySplitPath = aPath;
 
             do {

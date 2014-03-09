@@ -11,10 +11,10 @@ import java.util.Set;
 public class PeerSetsTest {
     @Test
     public void testStatic() throws Exception {
-        Set<URI> mySingle = new HashSet<URI>();
+        Set<URI> mySingle = new HashSet<>();
         mySingle.add(new URI("http://localhost:8080"));
 
-        Set<URI> myDouble = new HashSet<URI>();
+        Set<URI> myDouble = new HashSet<>();
         myDouble.add(new URI("http://localhost:8080"));
         myDouble.add(new URI("http://localhost:8081"));
 
