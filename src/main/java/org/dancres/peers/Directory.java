@@ -201,7 +201,7 @@ public class Directory implements Peer.Service {
 
             // Ignore my own directory
             //
-            if (! kv.getKey().equals(_peer.getAddress().toString() + "/directory")) {
+            if (!kv.getKey().equals(_peer.getAddress().toString())) {
                 boolean mySuccess = false;
 
                 do {
