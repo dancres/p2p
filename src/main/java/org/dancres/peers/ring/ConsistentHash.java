@@ -314,7 +314,7 @@ public class ConsistentHash {
     /**
      * @return this peer's current view of the ring
      */
-    public SortedSet<RingPosition> getRing() {
+    public SortedSet<RingPosition> getPositions() {
         return Collections.unmodifiableSortedSet(
                 new TreeSet<>(new RingSnapshot(_ringPositions, _peer)._newRing.values()));
     }
