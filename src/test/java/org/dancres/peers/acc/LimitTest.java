@@ -113,7 +113,7 @@ public class LimitTest {
 
             amStable = true;
             for (ConsistentHash myHash : _hashes) {
-                int myHashSize = myHash.getPositions().size();
+                int myHashSize = myHash.getRing().getPositions().size();
 
                 if (myHashSize != 9) {
                     _logger.info("Ring " + myHash + " is currently at " + myHashSize + " need 9");
@@ -128,7 +128,7 @@ public class LimitTest {
         if (! amStable)
             throw new RuntimeException("Never got stable");
 
-        _logger.info("Running with hashring: " + _hashes.getFirst().getPositions());
+        _logger.info("Running with hashring: " + _hashes.getFirst().getRing().getPositions());
 
         // Use the local peer's timer to schedule our count updates
         //

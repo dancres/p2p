@@ -89,8 +89,8 @@ public class ConsistentHashTest {
         Assert.assertEquals(1, myRing1.getPeerPositions().getPositions().size());
         Assert.assertEquals(0, myRing2.getPeerPositions().getPositions().size());
 
-        Assert.assertEquals(1, myRing1.getPositions().size());
-        Assert.assertEquals(1, myRing2.getPositions().size());
+        Assert.assertEquals(1, myRing1.getRing().getPositions().size());
+        Assert.assertEquals(1, myRing2.getRing().getPositions().size());
 
         myPeer1.stop();
         myPeer2.stop();
@@ -175,8 +175,8 @@ public class ConsistentHashTest {
         Assert.assertEquals(1, myPeer1NeighbourCount.get());
         Assert.assertEquals(1, myPeer2NeighbourCount.get());
 
-        Assert.assertEquals(2, myRing1.getPositions().size());
-        Assert.assertEquals(2, myRing2.getPositions().size());
+        Assert.assertEquals(2, myRing1.getRing().getPositions().size());
+        Assert.assertEquals(2, myRing2.getRing().getPositions().size());
 
         Set<RingSnapshot.NeighbourRelation> myRels = myRing1.getNeighbours();
 
@@ -275,17 +275,17 @@ public class ConsistentHashTest {
             myBarrier1.await(myBarrier1.current());
             myBarrier2.await(myBarrier2.current());
 
-            if ((myRing1.getPositions().size() == 6) && (myRing2.getPositions().size() == 6))
+            if ((myRing1.getRing().getPositions().size() == 6) && (myRing2.getRing().getPositions().size() == 6))
                 break;
         }
 
         myPeer1Dir.walk(new LoggerWriter(_logger));
         myPeer2Dir.walk(new LoggerWriter(_logger));
 
-        Assert.assertEquals(6, myRing1.getPositions().size());
+        Assert.assertEquals(6, myRing1.getRing().getPositions().size());
         Assert.assertEquals(3, myRing1.getNeighbours().size());
 
-        Assert.assertEquals(6, myRing2.getPositions().size());
+        Assert.assertEquals(6, myRing2.getRing().getPositions().size());
         Assert.assertEquals(3, myRing2.getNeighbours().size());
 
         myPeer1.stop();
@@ -408,17 +408,17 @@ public class ConsistentHashTest {
             myBarrier1.await(myBarrier1.current());
             myBarrier2.await(myBarrier2.current());
 
-            if ((myRing1.getPositions().size() == 6) && (myRing2.getPositions().size() == 6))
+            if ((myRing1.getRing().getPositions().size() == 6) && (myRing2.getRing().getPositions().size() == 6))
                 break;
         }
 
         myPeer1Dir.walk(new LoggerWriter(_logger));
         myPeer2Dir.walk(new LoggerWriter(_logger));
 
-        Assert.assertEquals(6, myRing1.getPositions().size());
+        Assert.assertEquals(6, myRing1.getRing().getPositions().size());
         Assert.assertEquals(3, myRing1.getNeighbours().size());
 
-        Assert.assertEquals(6, myRing2.getPositions().size());
+        Assert.assertEquals(6, myRing2.getRing().getPositions().size());
         Assert.assertEquals(3, myRing2.getNeighbours().size());
 
         myPeer1.stop();
@@ -472,18 +472,18 @@ public class ConsistentHashTest {
             myBarrier1.await(myBarrier1.current());
             myBarrier2.await(myBarrier2.current());
 
-            if ((myRing1.getPositions().size() == 6) && (myRing2.getPositions().size() == 6))
+            if ((myRing1.getRing().getPositions().size() == 6) && (myRing2.getRing().getPositions().size() == 6))
                 break;
         }
 
-        Assert.assertEquals(6, myRing1.getPositions().size());
+        Assert.assertEquals(6, myRing1.getRing().getPositions().size());
         Assert.assertEquals(3, myRing1.getNeighbours().size());
 
-        Assert.assertEquals(6, myRing2.getPositions().size());
+        Assert.assertEquals(6, myRing2.getRing().getPositions().size());
         Assert.assertEquals(3, myRing2.getNeighbours().size());
 
         // Ring is stable, we can proceed....
-        SortedSet<RingPosition> myRing = myRing1.getPositions();
+        SortedSet<RingPosition> myRing = myRing1.getRing().getPositions();
 
         try {
             // Should mean we grab some number of positions from first

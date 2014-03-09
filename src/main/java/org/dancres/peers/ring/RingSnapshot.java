@@ -11,7 +11,7 @@ import java.util.*;
  * Ring based on the current positions - the result is a new ring and a record
  * of any rejected node positions
  */
-class RingSnapshot {
+public class RingSnapshot {
     private static final Logger _logger = LoggerFactory.getLogger(RingSnapshot.class);
 
     final Map<Comparable, RingPosition> _newRing;
@@ -60,6 +60,14 @@ class RingSnapshot {
 
         _newRing = myNewRing;
         _rejected = myLocalRejections;
+    }
+
+    /**
+     * @return this peer's current view of the ring
+     */
+    public SortedSet<RingPosition> getPositions() {
+        return Collections.unmodifiableSortedSet(
+                new TreeSet<>(_newRing.values()));
     }
 
     class NeighboursSnapshot {
