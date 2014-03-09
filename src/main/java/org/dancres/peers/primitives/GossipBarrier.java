@@ -26,7 +26,8 @@ public class GossipBarrier implements Directory.Listener {
         aDir.add(this);
     }
 
-    public void updated(Directory aDirectory, List<Directory.Entry> aNewPeers, List<Directory.Entry> anUpdatedPeers) {
+    public void updated(Directory aDirectory, List<Directory.Entry> aNewPeers, List<Directory.Entry> anUpdatedPeers,
+                        List<Directory.Entry> aDeadPeers) {
         _lock.lock();
 
         try {

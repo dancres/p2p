@@ -7,6 +7,8 @@ import org.dancres.peers.primitives.HttpServer;
 import org.dancres.peers.primitives.InProcessPeer;
 import org.dancres.peers.primitives.StaticPeerSet;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -14,6 +16,8 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class DirTest {
+    private Logger _logger = LoggerFactory.getLogger(DirTest.class);
+
     @Test
     public void testGossip() throws Exception {
         HttpServer myServer = new HttpServer(new InetSocketAddress("localhost", 8081));
@@ -28,8 +32,8 @@ public class DirTest {
 
         PeerSet myPeerSet = new StaticPeerSet(myPeers);
 
-        Directory myPeer1Dir = new Directory(myPeer1, myPeerSet, 2000);
-        Directory myPeer2Dir = new Directory(myPeer2, myPeerSet, 2000);
+        Directory myPeer1Dir = new Directory(myPeer1, myPeerSet, 2000, 12000);
+        Directory myPeer2Dir = new Directory(myPeer2, myPeerSet, 2000, 12000);
         GossipBarrier myBarrier1 = new GossipBarrier(myPeer1Dir);
         GossipBarrier myBarrier2 = new GossipBarrier(myPeer2Dir);
 
@@ -77,7 +81,7 @@ public class DirTest {
 
         PeerSet myPeerSet = new StaticPeerSet(myPeers);
 
-        Directory myPeer1Dir = new Directory(myPeer1, myPeerSet, 2000);
+        Directory myPeer1Dir = new Directory(myPeer1, myPeerSet, 2000, 12000);
 
         myPeer1Dir.add(new Directory.AttributeProducer() {
             public Map<String, String> produce() {
@@ -111,35 +115,58 @@ public class DirTest {
 
         PeerSet myPeerSet = new StaticPeerSet(myPeers);
 
-        Directory myPeer1Dir = new Directory(myPeer1, myPeerSet, 2000);
-        Directory myPeer2Dir = new Directory(myPeer2, myPeerSet, 2000);
+        Directory myPeer1Dir = new Directory(myPeer1, myPeerSet, 2000, 6000);
+        Directory myPeer2Dir = new Directory(myPeer2, myPeerSet, 2000, 6000);
         final AtomicInteger myEventCount = new AtomicInteger(0);
+        final AtomicInteger myDeadCount = new AtomicInteger(0);
 
         GossipBarrier myBarrier1 = new GossipBarrier(myPeer1Dir);
         GossipBarrier myBarrier2 = new GossipBarrier(myPeer2Dir);
 
         myPeer1Dir.add(new Directory.Listener() {
             public void updated(Directory aDirectory, List<Directory.Entry> aNewPeers,
-                                List<Directory.Entry> anUpdatedPeers) {
-                Assert.assertEquals(1, aNewPeers.size());
-                Assert.assertEquals(0, anUpdatedPeers.size());
+                                List<Directory.Entry> anUpdatedPeers, List<Directory.Entry> aDeadPeers) {
+                _logger.info("Listener update: " + aNewPeers.size() + ", " + anUpdatedPeers.size() + ", " +
+                    aDeadPeers.size());
+
+                if (aDeadPeers.size() > 0)
+                    myDeadCount.incrementAndGet();
 
                 myEventCount.incrementAndGet();
             }
         });
 
-        int myBarr1 = myBarrier1.current();
-        int myBarr2 = myBarrier1.current();
+        int myBarr1;
+        int myBarr2;
 
         myPeer1Dir.start();
 
-        myBarrier1.await(myBarr1);
-        myBarrier1.await(myBarr2);
+        for (int i = 0; i < 2; i++) {
+            myBarr1 = myBarrier1.current();
+            myBarr2 = myBarrier2.current();
+
+            myBarrier1.await(myBarr1);
+            myBarrier2.await(myBarr2);
+        }
 
         Assert.assertEquals(2, myPeer1Dir.getDirectory().size());
         Assert.assertEquals(2, myPeer2Dir.getDirectory().size());
 
         Assert.assertEquals(1, myEventCount.get());
+
+        // Stop a peer and make sure we find out about it
+        //
+        myPeer2.stop();
+
+        _logger.info("Peer 2 has been stopped @ " + System.currentTimeMillis());
+
+        for (int i = 0; i < 4; i++) {
+            myBarr1 = myBarrier1.current();
+            myBarrier1.await(myBarr1);
+        }
+
+        Assert.assertEquals(1, myPeer1Dir.getDirectory().size());
+        Assert.assertEquals(1, myDeadCount.get());
 
         myServer.terminate();
     }

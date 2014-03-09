@@ -193,7 +193,7 @@ public class ConsistentHash {
 
     private class DirListenerImpl implements Directory.Listener {
         public void updated(Directory aDirectory, List<Directory.Entry> aNewPeers,
-                            List<Directory.Entry> anUpdatedPeers) {
+                            List<Directory.Entry> anUpdatedPeers, List<Directory.Entry> aDeadPeers) {
 
             _logger.debug("Ring Update");
 

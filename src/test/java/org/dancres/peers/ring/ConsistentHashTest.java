@@ -32,8 +32,8 @@ public class ConsistentHashTest {
 
         PeerSet myPeerSet = new StaticPeerSet(myPeers);
 
-        Directory myPeer1Dir = new Directory(myPeer1, myPeerSet, 500);
-        Directory myPeer2Dir = new Directory(myPeer2, myPeerSet, 500);
+        Directory myPeer1Dir = new Directory(myPeer1, myPeerSet, 500, 3000);
+        Directory myPeer2Dir = new Directory(myPeer2, myPeerSet, 500, 3000);
 
         GossipBarrier myBarrier1 = new GossipBarrier(myPeer1Dir);
         GossipBarrier myBarrier2 = new GossipBarrier(myPeer2Dir);
@@ -128,8 +128,8 @@ public class ConsistentHashTest {
 
         PeerSet myPeerSet = new StaticPeerSet(myPeers);
 
-        Directory myPeer1Dir = new Directory(myPeer1, myPeerSet, 500);
-        Directory myPeer2Dir = new Directory(myPeer2, myPeerSet, 500);
+        Directory myPeer1Dir = new Directory(myPeer1, myPeerSet, 500, 3000);
+        Directory myPeer2Dir = new Directory(myPeer2, myPeerSet, 500, 3000);
 
         GossipBarrier myBarrier1 = new GossipBarrier(myPeer1Dir);
         GossipBarrier myBarrier2 = new GossipBarrier(myPeer2Dir);
@@ -236,8 +236,8 @@ public class ConsistentHashTest {
 
         PeerSet myPeerSet = new StaticPeerSet(myPeers);
 
-        Directory myPeer1Dir = new Directory(myPeer1, myPeerSet, 500);
-        Directory myPeer2Dir = new Directory(myPeer2, myPeerSet, 500);
+        Directory myPeer1Dir = new Directory(myPeer1, myPeerSet, 500, 3000);
+        Directory myPeer2Dir = new Directory(myPeer2, myPeerSet, 500, 3000);
 
         GossipBarrier myBarrier1 = new GossipBarrier(myPeer1Dir);
         GossipBarrier myBarrier2 = new GossipBarrier(myPeer2Dir);
@@ -308,8 +308,8 @@ public class ConsistentHashTest {
 
         PeerSet myPeerSet = new StaticPeerSet(myPeers);
 
-        Directory myPeer1Dir = new Directory(myPeer1, myPeerSet, 500);
-        Directory myPeer2Dir = new Directory(myPeer2, myPeerSet, 500);
+        Directory myPeer1Dir = new Directory(myPeer1, myPeerSet, 500, 3000);
+        Directory myPeer2Dir = new Directory(myPeer2, myPeerSet, 500, 3000);
 
         GossipBarrier myBarrier1 = new GossipBarrier(myPeer1Dir);
         GossipBarrier myBarrier2 = new GossipBarrier(myPeer2Dir);
@@ -369,8 +369,8 @@ public class ConsistentHashTest {
 
         PeerSet myPeerSet = new StaticPeerSet(myPeers);
 
-        Directory myPeer1Dir = new Directory(myPeer1, myPeerSet, 500);
-        Directory myPeer2Dir = new Directory(myPeer2, myPeerSet, 500);
+        Directory myPeer1Dir = new Directory(myPeer1, myPeerSet, 500, 3000);
+        Directory myPeer2Dir = new Directory(myPeer2, myPeerSet, 500, 3000);
 
         GossipBarrier myBarrier1 = new GossipBarrier(myPeer1Dir);
         GossipBarrier myBarrier2 = new GossipBarrier(myPeer2Dir);
@@ -441,8 +441,8 @@ public class ConsistentHashTest {
 
         PeerSet myPeerSet = new StaticPeerSet(myPeers);
 
-        Directory myPeer1Dir = new Directory(myPeer1, myPeerSet, 500);
-        Directory myPeer2Dir = new Directory(myPeer2, myPeerSet, 500);
+        Directory myPeer1Dir = new Directory(myPeer1, myPeerSet, 500, 3000);
+        Directory myPeer2Dir = new Directory(myPeer2, myPeerSet, 500, 3000);
 
         GossipBarrier myBarrier1 = new GossipBarrier(myPeer1Dir);
         GossipBarrier myBarrier2 = new GossipBarrier(myPeer2Dir);

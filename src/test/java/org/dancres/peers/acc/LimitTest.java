@@ -76,7 +76,7 @@ public class LimitTest {
         // Now we have some peers, get directories and barriers up
         //
         for (Peer myPeer : _peers) {
-            Directory myDir = new Directory(myPeer, myPeerSet, 1000);
+            Directory myDir = new Directory(myPeer, myPeerSet, 1000, 5000);
             GossipBarrier myBarrier = new GossipBarrier(myDir);
 
             _dirs.add(myDir);
