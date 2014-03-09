@@ -35,7 +35,6 @@ public class DirTest {
         Directory myPeer1Dir = new Directory(myPeer1, myPeerSet, 2000, 12000);
         Directory myPeer2Dir = new Directory(myPeer2, myPeerSet, 2000, 12000);
         GossipBarrier myBarrier1 = new GossipBarrier(myPeer1Dir);
-        GossipBarrier myBarrier2 = new GossipBarrier(myPeer2Dir);
 
         // We want some skew between birth time of directory and gossip time to test timestamp/liveness
         //

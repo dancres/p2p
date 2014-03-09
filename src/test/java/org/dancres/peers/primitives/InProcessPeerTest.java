@@ -28,8 +28,6 @@ public class InProcessPeerTest {
 
         Peer myPeer1 = new InProcessPeer(myServer, myClient, "/peer1", new Timer());
 
-        Peer.ServiceDispatcher myDispatcher = new Dispatcher();
-
         myPeer1.add(new TestImpl());
 
         try {

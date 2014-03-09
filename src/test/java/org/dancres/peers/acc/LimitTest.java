@@ -41,7 +41,6 @@ public class LimitTest {
     private static final Logger _logger = LoggerFactory.getLogger(LimitTest.class);
 
     private final LinkedList<Peer> _peers = new LinkedList<>();
-    private final LinkedList<Directory> _dirs = new LinkedList<>();
     private final LinkedList<ConsistentHash> _hashes = new LinkedList<>();
     private final LinkedList<GossipBarrier> _barriers = new LinkedList<>();
     private final LinkedList<DecayingAccumulators> _accs = new LinkedList<>();
@@ -79,7 +78,6 @@ public class LimitTest {
             Directory myDir = new Directory(myPeer, myPeerSet, 1000, 5000);
             GossipBarrier myBarrier = new GossipBarrier(myDir);
 
-            _dirs.add(myDir);
             _barriers.add(myBarrier);
 
             myDir.start();
