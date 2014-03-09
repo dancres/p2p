@@ -178,11 +178,11 @@ public class ConsistentHashTest {
         Assert.assertEquals(2, myRing1.getRing().size());
         Assert.assertEquals(2, myRing2.getRing().size());
 
-        Set<ConsistentHash.NeighbourRelation> myRels = myRing1.getNeighbours();
+        Set<RingSnapshot.NeighbourRelation> myRels = myRing1.getNeighbours();
 
         Assert.assertEquals(1, myRels.size());
 
-        ConsistentHash.NeighbourRelation myRel = myRels.iterator().next();
+        RingSnapshot.NeighbourRelation myRel = myRels.iterator().next();
 
         // In ring 1, owns position 1, neighbour should be 3
         //
