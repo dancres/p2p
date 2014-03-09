@@ -42,9 +42,8 @@ public class Utils {
                     myWorkableInterfaces.add(myInterface);
             }
 
-            Iterator<NetworkInterface> myPossibles = myWorkableInterfaces.iterator();
-            while (myPossibles.hasNext()) {
-                _logger.debug("Candidate Interface: " + myPossibles.next());
+            for (NetworkInterface myI : myWorkableInterfaces) {
+                _logger.debug("Candidate Interface: " + myI);
             }
 
             /*
