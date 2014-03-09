@@ -82,6 +82,7 @@ public class Directory implements Peer.Service {
     }
 
     private static final long DEFAULT_GOSSIP_PERIOD = 5000;
+    private static final long DEFAULT_NODE_OVERDUE_TIME = 30000;
 
     private static final Logger _logger = LoggerFactory.getLogger(Directory.class);
 
@@ -92,6 +93,7 @@ public class Directory implements Peer.Service {
     private final List<AttributeProducer> _producers = new CopyOnWriteArrayList<AttributeProducer>();
     private final List<Listener> _listeners = new CopyOnWriteArrayList<Listener>();
     private final long _gossipPeriod;
+    private final long _nodeOverdueTime;
 
     private final Executor _notifier = Executors.newSingleThreadExecutor(new ThreadFactory() {
         public Thread newThread(Runnable r) {
@@ -131,7 +133,7 @@ public class Directory implements Peer.Service {
      *                 subset of the peers registered with and using the directory service).
      */
     public Directory(Peer aPeer, PeerSet aPeerSet) {
-        this(aPeer, aPeerSet, DEFAULT_GOSSIP_PERIOD);
+        this(aPeer, aPeerSet, DEFAULT_GOSSIP_PERIOD, DEFAULT_NODE_OVERDUE_TIME);
     }
 
     /**
@@ -142,12 +144,13 @@ public class Directory implements Peer.Service {
      *                 subset of the peers registered with and using the directory service).
      * @param aGossipPeriod the period of time in milliseconds between gossip rounds.
      */
-    public Directory(Peer aPeer, PeerSet aPeerSet, long aGossipPeriod) {
+    public Directory(Peer aPeer, PeerSet aPeerSet, long aGossipPeriod, long aNodeOverdueTime) {
         _peers = aPeerSet;
         _peer = aPeer;
         _dispatcher = new Dispatcher();
         _peer.add(this);
         _gossipPeriod = aGossipPeriod;
+        _nodeOverdueTime = aNodeOverdueTime;
     }
 
     /**
@@ -228,10 +231,26 @@ public class Directory implements Peer.Service {
             }
         }
 
+        // Hunt down dead nodes
+        //
+        final List<Entry> myDeadPeers = new LinkedList<>();
+
+        for (Map.Entry<String, Entry> kv : _directory.entrySet()) {
+            _logger.debug("Dead node check: " + kv.getKey() + " -> " + kv.getValue());
+            _logger.debug("Dead node check time: " + kv.getValue().getTimestamp() + ", " + System.currentTimeMillis());
+
+            if ((kv.getValue().getTimestamp() + _nodeOverdueTime) < System.currentTimeMillis()) {
+                _logger.debug("Removing: " + kv.getKey());
+
+                _directory.remove(kv.getKey());
+                myDeadPeers.add(kv.getValue());
+            }
+        }
+
         _notifier.execute(new Runnable() {
             public void run() {
                 for (Listener l : _listeners) {
-                    l.updated(Directory.this, myNewPeers, myUpdatedPeers);
+                    l.updated(Directory.this, myNewPeers, myUpdatedPeers, myDeadPeers);
                 }
             }
         });
@@ -274,6 +293,19 @@ public class Directory implements Peer.Service {
                         myGson.toJson(getDirectory())).execute(new AsyncCompletionHandler<Response>() {
 
                     public Response onCompleted(Response aResponse) throws Exception {
+                        _logger.debug("Response status: " + aResponse.getStatusCode());
+
+                        // Give up if we didn't get a positive answer
+                        //
+                        if (aResponse.getStatusCode() != 200) {
+                            _logger.debug("No directory - dead node run");
+
+                            // Force a dead-node cycle, even though there is no directory to merge
+                            //
+                            merge(new HashMap<String, Entry>());
+                            return aResponse;
+                        }
+
                         Type myMapType = new TypeToken<Map<String, Entry>>() {}.getType();
                         String myResponseDir = aResponse.getResponseBody();
 
@@ -299,26 +331,20 @@ public class Directory implements Peer.Service {
         }
     }
 
+    /**
+     * Attributes to be published in the <code>Directory</code> of a particular peer are supplied by instances of
+     * <code>AttributeProducer</code>. Typically there'd be one of these per network service running on the peer.
+     */
     public interface AttributeProducer {
         Map<String, String> produce();
     }
 
+    /**
+     * Implementors of this interface will receive information about changes in the <code>Directory</code> membership.
+     * Specifically when new nodes appear, existing nodes update their attributes or nodes disappear.
+     */
     public interface Listener {
-        public void updated(Directory aDirectory, List<Entry> aNewPeers, List<Entry> anUpdatedPeers);
-    }
-
-    public static class ListenerImpl implements Listener {
-        private AtomicBoolean _doneFirst = new AtomicBoolean(false);
-        private Map<String, Entry> _base;
-
-        public void updated(Directory aDirectory, List<Entry> aNewPeers, List<Entry> anUpdatedPeers) {
-            if (! _doneFirst.get())
-                synchronized(this) {
-                    if (_doneFirst.compareAndSet(false, true))
-                        _base = aDirectory.getDirectory();
-                }
-
-            // Apply update
-        }
+        public void updated(Directory aDirectory, List<Entry> aNewPeers, List<Entry> anUpdatedPeers,
+                            List<Entry> aDeadPeers);
     }
 }
