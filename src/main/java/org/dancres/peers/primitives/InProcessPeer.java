@@ -10,7 +10,6 @@ import java.net.URI;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * InProcessPeer shares a single address and port with a number of other InProcessPeers (e.g. By sharing a single

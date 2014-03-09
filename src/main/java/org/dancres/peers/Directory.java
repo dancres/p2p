@@ -20,7 +20,6 @@ import java.io.Writer;
 import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * <p>Directory service that lives atop a set of peers. These peers are used to maintain the directory via gossip.
@@ -227,7 +226,7 @@ public class Directory implements Peer.Service {
                     } else {
                         break;
                     }
-                } while (mySuccess != true);
+                } while (! mySuccess);
             }
         }
 

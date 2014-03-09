@@ -8,7 +8,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
 import org.dancres.peers.Directory;
 import org.dancres.peers.Peer;
 import org.slf4j.Logger;
@@ -52,7 +51,6 @@ public class ConsistentHash {
     }
 
     private final Peer _peer;
-    private final Directory _dir;
     private final List<Listener> _listeners = new CopyOnWriteArrayList<>();
 
     /**
@@ -95,15 +93,15 @@ public class ConsistentHash {
         _peer = aPeer;
         _positionGenerator = aGenerator;
         _packager = new Packager(aPacker, _ringName);
-        _dir = (Directory) aPeer.find(Directory.class);
+        Directory myDir = (Directory) aPeer.find(Directory.class);
 
-        if (_dir == null)
+        if (myDir == null)
             throw new RuntimeException("ConsistentHash couldn't locate a Directory service in peer");
 
         _ringPositions.put(_peer.getAddress(), new RingPositions());
 
-        _dir.add(new AttrProducerImpl());
-        _dir.add(new DirListenerImpl());
+        myDir.add(new AttrProducerImpl());
+        myDir.add(new DirListenerImpl());
     }
 
     /**
