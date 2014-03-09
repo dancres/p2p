@@ -494,14 +494,14 @@ public class ConsistentHashTest {
             //
             int myHash2 = ((int) myRing.last().getPosition()) - 1;
 
-            Collection<RingPosition> myResults = myRing1.allocate(myHash1, 3);
+            Collection<RingPosition> myResults = myRing1.getRing().allocate(myHash1, 3);
 
             // Test for size and uniqueness
             //
             Assert.assertEquals(3, myResults.size());
             Assert.assertEquals(3, new HashSet<>(myResults).size());
 
-            myResults = myRing1.allocate(myHash2, 3);
+            myResults = myRing1.getRing().allocate(myHash2, 3);
 
             Assert.assertEquals(3, myResults.size());
             Assert.assertEquals(3, new HashSet<>(myResults).size());

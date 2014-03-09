@@ -63,6 +63,74 @@ public class RingSnapshot {
     }
 
     /**
+     * Takes a hashcode and returns the position to allocate it to.
+     *
+     * @param aHashCode
+     * @return
+     */
+    public RingPosition allocate(Comparable aHashCode) {
+        return allocate(aHashCode, 1).get(0);
+    }
+
+    /**
+     * Takes a hashcode and returns the position(s) to allocate it to.
+     *
+     * @param aHashCode
+     * @param aReplicationCount the number of positions to return
+     *
+     * @return a list of positions
+     */
+    public List<RingPosition> allocate(Comparable aHashCode, int aReplicationCount) {
+        TreeSet<RingPosition> myPositions = new TreeSet<>(_newRing.values());
+
+        if (myPositions.size() == 0)
+            throw new IllegalStateException("Haven't got any positions to allocate to");
+
+        if (myPositions.size() < aReplicationCount)
+            throw new IllegalStateException("Haven't got enough positions for the specified replication count: " +
+                    aReplicationCount);
+
+        // If aHashCode is greater than the greatest position, it wraps around to the first
+        //
+        if (myPositions.last().getPosition().compareTo(aHashCode) < 1)
+            return extract(myPositions, myPositions.first(), aReplicationCount);
+        else {
+            for (RingPosition myPos : myPositions) {
+                if (myPos.getPosition().compareTo(aHashCode) >= 1) {
+                    return extract(myPositions, myPos, aReplicationCount);
+                }
+            }
+        }
+
+        // Shouldn't happen
+        //
+        throw new RuntimeException("Logical error in code");
+    }
+
+    private List<RingPosition> extract(TreeSet<RingPosition> aList, RingPosition aFirst, int aNumber) {
+        LinkedList<RingPosition> myResults = new LinkedList<>();
+        int myTotal = 1;
+
+        myResults.add(aFirst);
+
+        while (myTotal < aNumber) {
+            RingPosition myNext = aList.higher(myResults.getLast());
+
+            if (myNext == null) {
+                // Wrap
+                //
+                myResults.add(aList.first());
+            } else {
+                myResults.add(myNext);
+            }
+
+            myTotal++;
+        }
+
+        return myResults;
+    }
+
+    /**
      * @return this peer's current view of the ring
      */
     public SortedSet<RingPosition> getPositions() {

@@ -205,7 +205,7 @@ public class LimitTest {
                 // Use the local hash ring to identify servers to use
                 //
                 Integer myHash = mySample.getAccumulatorId().hashCode();
-                List<RingPosition> myPositions = _hashes.getFirst().allocate(myHash, 3);
+                List<RingPosition> myPositions = _hashes.getFirst().getRing().allocate(myHash, 3);
                 Set<String> myPeers = new HashSet<>();
 
                 // We do nothing to enforce a properly balanced hash ring so could end up with the same
