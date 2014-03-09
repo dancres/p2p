@@ -24,6 +24,7 @@ public class InProcessPeer implements Peer {
             new ConcurrentWeakKeyHashMap<String, ServiceDispatcher>();
     private final ConcurrentMap<Class, Service> _services = new ConcurrentHashMap<Class, Service>();
     private final URI _fullAddress;
+    private final String _peerAddress;
 
     /**
      * @param aServer is the HttpServer to share in
@@ -34,6 +35,7 @@ public class InProcessPeer implements Peer {
         _server = aServer;
         _client = aClient;
         _timer = aTimer;
+        _peerAddress = aPeerAddress;
         _fullAddress = new URI(_server.getBase().toString() + aPeerAddress);
 
         _server.add(aPeerAddress, new HttpServer.Handler() {
@@ -56,6 +58,7 @@ public class InProcessPeer implements Peer {
     }
 
     public void stop() {
+        _server.remove(_peerAddress);
         _timer.cancel();
     }
 
