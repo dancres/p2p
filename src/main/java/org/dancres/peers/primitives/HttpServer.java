@@ -112,7 +112,7 @@ public class HttpServer {
             // If we didn't find a handler, give a default response
             //
             if (! handled) {
-                StringBuffer buf = new StringBuffer();
+                StringBuilder buf = new StringBuilder();
 
                 buf.append("WELCOME TO THE WILD WILD WEB SERVER\r\n");
                 buf.append("===================================\r\n");
