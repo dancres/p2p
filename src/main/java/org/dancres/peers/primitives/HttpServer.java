@@ -137,6 +137,7 @@ public class HttpServer {
                 }
 
                 // Build the response object.
+                myResponse.setStatus(HttpResponseStatus.NOT_FOUND);
                 myResponse.setContent(ChannelBuffers.copiedBuffer(buf.toString(), CharsetUtil.UTF_8));
                 myResponse.setHeader(HttpHeaders.Names.CONTENT_TYPE, "text/plain charset=UTF-8");
             }
