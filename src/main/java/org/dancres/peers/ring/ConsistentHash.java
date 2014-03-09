@@ -53,18 +53,18 @@ public class ConsistentHash {
 
     private final Peer _peer;
     private final Directory _dir;
-    private final List<Listener> _listeners = new CopyOnWriteArrayList<Listener>();
+    private final List<Listener> _listeners = new CopyOnWriteArrayList<>();
 
     /**
      * The positions held by each node identified by address
      */
-    private final ConcurrentMap<String, RingPositions> _ringPositions = new ConcurrentHashMap<String, RingPositions>();
+    private final ConcurrentMap<String, RingPositions> _ringPositions = new ConcurrentHashMap<>();
 
     /**
      * The neighbour relations - which positions are closest whilst still less than our own
      */
     private final AtomicReference<HashSet<RingSnapshot.NeighbourRelation>> _neighbours =
-            new AtomicReference<HashSet<RingSnapshot.NeighbourRelation>>(new HashSet<RingSnapshot.NeighbourRelation>());
+            new AtomicReference<>(new HashSet<RingSnapshot.NeighbourRelation>());
 
     private final Packager _packager;
     private final PositionGenerator _positionGenerator;
@@ -146,7 +146,7 @@ public class ConsistentHash {
 
     private class AttrProducerImpl implements Directory.AttributeProducer {
         public Map<String, String> produce() {
-            Map<String, String> myFlattenedRingPosns = new HashMap<String, String>();
+            Map<String, String> myFlattenedRingPosns = new HashMap<>();
 
             myFlattenedRingPosns.put(_ringName,
                     _packager.flattenRingPositions(_ringPositions.get(_peer.getAddress())));
@@ -295,7 +295,7 @@ public class ConsistentHash {
     private SortedSet<Comparable> flattenPositions() {
         // Simply flatten _ringPositions to get a view of current ring, don't care about peers or collision detection
         //
-        TreeSet<Comparable> myOccupiedPositions = new TreeSet<Comparable>();
+        TreeSet<Comparable> myOccupiedPositions = new TreeSet<>();
 
         for (RingPositions myRPs : _ringPositions.values())
             for (RingPosition myRP : myRPs.getPositions())
@@ -387,7 +387,7 @@ public class ConsistentHash {
      */
     public List<RingPosition> allocate(Comparable aHashCode, int aReplicationCount) {
         TreeSet<RingPosition> myPositions =
-                new TreeSet<RingPosition>(new RingSnapshot(_ringPositions, _peer)._newRing.values());
+                new TreeSet<>(new RingSnapshot(_ringPositions, _peer)._newRing.values());
 
         if (myPositions.size() == 0)
             throw new IllegalStateException("Haven't got any positions to allocate to");

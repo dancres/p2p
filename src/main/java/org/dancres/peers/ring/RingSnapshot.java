@@ -20,8 +20,9 @@ class RingSnapshot {
 
     RingSnapshot(Map<String, RingPositions> aRingPositions, Peer aPeer) {
         _peer = aPeer;
-        Map<Comparable, RingPosition> myNewRing = new HashMap<Comparable, RingPosition>();
-        List<RingPosition> myLocalRejections = new LinkedList<RingPosition>();
+
+        Map<Comparable, RingPosition> myNewRing = new HashMap<>();
+        List<RingPosition> myLocalRejections = new LinkedList<>();
 
         for (RingPositions myRingPositions : aRingPositions.values()) {
             for (RingPosition myRingPosn : myRingPositions.getPositions()) {
@@ -77,8 +78,8 @@ class RingSnapshot {
      * @param anOldNeighbours
      */
     NeighboursSnapshot computeNeighbours(HashSet<NeighbourRelation> anOldNeighbours) {
-        HashSet<NeighbourRelation> myNeighbours = new HashSet<NeighbourRelation>();
-        SortedSet<RingPosition> myRing = new TreeSet<RingPosition>(_newRing.values());
+        HashSet<NeighbourRelation> myNeighbours = new HashSet<>();
+        SortedSet<RingPosition> myRing = new TreeSet<>(_newRing.values());
         RingPosition myLast = myRing.last();
 
         for (RingPosition myPosn : myRing) {
