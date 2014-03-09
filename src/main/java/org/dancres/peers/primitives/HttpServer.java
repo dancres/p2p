@@ -71,6 +71,10 @@ public class HttpServer {
         _handlers.put(aPath, aHandler);
     }
 
+    public void remove(String aPath) {
+        _handlers.remove(aPath);
+    }
+
     private Channel init() throws InterruptedException {
         ServerSocketChannel myChannel = _channelFactory.newChannel(commsStack(Channels.pipeline()));
         myChannel.getConfig().setReuseAddress(true);
