@@ -179,8 +179,8 @@ public class Directory implements Peer.Service {
     public Map<String, Entry> getDirectory() {
         HashMap<String, Entry> myEntries = new HashMap<>(_directory);
 
-        myEntries.put(_peer.getAddress().toString(),
-                new Entry(_peer.getAddress().toString(),
+        myEntries.put(_peer.getAddress(),
+                new Entry(_peer.getAddress(),
                         getAttributes(),
                         System.currentTimeMillis(),
                         _birthTime));
@@ -204,7 +204,7 @@ public class Directory implements Peer.Service {
 
             // Ignore my own directory
             //
-            if (!kv.getKey().equals(_peer.getAddress().toString())) {
+            if (!kv.getKey().equals(_peer.getAddress())) {
                 boolean mySuccess = false;
 
                 do {

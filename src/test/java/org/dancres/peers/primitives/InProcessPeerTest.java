@@ -33,7 +33,7 @@ public class InProcessPeerTest {
         myPeer1.add(new TestImpl());
 
         try {
-            myClient.prepareGet(myPeer1.getAddress().toString() + "/test").execute(
+            myClient.prepareGet(myPeer1.getAddress() + "/test").execute(
                     new AsyncCompletionHandler<Response>() {
 
                         public Response onCompleted(Response aResponse) throws Exception {
