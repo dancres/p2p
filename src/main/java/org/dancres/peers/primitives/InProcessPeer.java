@@ -12,8 +12,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * InProcessPeer shares a single address and port with a number of other InProcessPeers (e.g. By sharing a single
- * webserver with a common URL base space and mapping to some subspace underneath the base).
+ * InProcessPeer shares a single address and port with a number of other InProcessPeers by sharing a single
+ * webserver with a common URL base space and mapping to some subspace underneath the base. Thus services are
+ * to be found rooted under "{@literal <}peer_address:peer_port{@literal >}/{@literal <}peer_subspace{@literal >}"
  */
 public class InProcessPeer implements Peer {
     private final AsyncHttpClient _client;

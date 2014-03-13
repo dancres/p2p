@@ -7,6 +7,11 @@ import org.jboss.netty.handler.codec.http.HttpResponse;
 import java.net.URI;
 import java.util.Timer;
 
+/**
+ * The core abstraction for the toolkit. A <code>Peer</code> represents an independent entity running a set of services,
+ * co-operating with some set of peers. Interactions across peers are run across http connections with services mapped
+ * to specific namespaces under "{@literal <}peer_address:peer_port{@literal >}".
+ */
 public interface Peer {
     /**
      * Shutdown this peer
