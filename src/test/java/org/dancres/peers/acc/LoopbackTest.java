@@ -20,7 +20,7 @@ public class LoopbackTest {
         DecayingAccumulators myCounts = new DecayingAccumulators(myPeer1, 2000);
 
         DecayingAccumulators.Count myTotal = myCounts.log(myPeer1.getAddress(),
-                new DecayingAccumulators.Count("a", 1000, 1000));
+                myCounts.newCount("a", 1000, 1000));
 
         Assert.assertEquals(1000, myTotal.getCount());
 
@@ -28,13 +28,13 @@ public class LoopbackTest {
 
         Assert.assertEquals(1000, myCurrent.getCount());
 
-        myTotal = myCounts.log(myPeer1.getAddress(), new DecayingAccumulators.Count("a", 1000, 1000));
+        myTotal = myCounts.log(myPeer1.getAddress(), myCounts.newCount("a", 1000, 1000));
 
         Assert.assertEquals(2000, myTotal.getCount());
 
         Thread.sleep(3000);
 
-        myTotal = myCounts.log(myPeer1.getAddress(), new DecayingAccumulators.Count("a", 1000, 1000));
+        myTotal = myCounts.log(myPeer1.getAddress(), myCounts.newCount("a", 1000, 1000));
 
         Assert.assertEquals(1000, myTotal.getCount());
 

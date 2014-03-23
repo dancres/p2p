@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * <p>A service which maintains a number of independent, uniquely named accumulators.</p>
@@ -27,6 +28,7 @@ public class DecayingAccumulators implements Peer.Service {
 
     public static class Count implements Comparable<Count> {
         private final String _accumulatorId;
+        private final String _nonce;
         private final long _samplePeriodInMillis;
         private final long _count;
 
@@ -34,11 +36,13 @@ public class DecayingAccumulators implements Peer.Service {
          * @param anAccumulatorId is the id of the accumulator to add this count to
          * @param aSamplePeriod is the period of which the count was taken
          * @param aCount is the count itself
+         * @param aNonce uniquely identifies a count for purposes of de-duping (e.g. because of message-loss)
          */
-        public Count(String anAccumulatorId, long aSamplePeriod, long aCount) {
+        Count(String anAccumulatorId, long aSamplePeriod, long aCount, String aNonce) {
             _accumulatorId = anAccumulatorId;
             _samplePeriodInMillis = aSamplePeriod;
             _count = aCount;
+            _nonce = aNonce;
         }
 
         public String getAccumulatorId() {
@@ -53,8 +57,11 @@ public class DecayingAccumulators implements Peer.Service {
             return _count;
         }
 
+        public String getNonce() { return _nonce; }
+
         public String toString() {
-            return "ID: " + _accumulatorId + ", Period: " + _samplePeriodInMillis + ", Count: " + _count;
+            return "ID: " + _accumulatorId + ", Period: " + _samplePeriodInMillis + ", Count: " + _count +
+                    ", Nonce: " + _nonce;
         }
 
         public int compareTo(Count aCount) {
@@ -80,15 +87,31 @@ public class DecayingAccumulators implements Peer.Service {
             return ((_arrivalTime - _count.getSamplePeriod()) >= aMinimumAge);
         }
 
+        public boolean equals(Object anObject) {
+            if (anObject instanceof Docket) {
+                Docket myOther = (Docket) anObject;
+
+                return ((myOther._count.getAccumulatorId().equals(_count.getAccumulatorId())) &&
+                        (myOther._count.getNonce().equals(_count.getNonce())));
+            }
+
+            return false;
+        }
+
         public Count getSample() {
             return _count;
+        }
+
+        public int hashCode() {
+            return _count.getAccumulatorId().hashCode() ^ _count.getNonce().hashCode();
         }
     }
 
     private final Peer.ServiceDispatcher _dispatcher;
-    private final ConcurrentHashMap<String, List<Docket>> _collectedSamples = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Set<Docket>> _collectedSamples = new ConcurrentHashMap<>();
     private final Peer _peer;
     private final long _window;
+    private final AtomicLong _nonceSeq = new AtomicLong(0);
 
     /**
      * Use this method to setup a client or a server with a default window of 60 seconds on the specified peer.
@@ -116,6 +139,14 @@ public class DecayingAccumulators implements Peer.Service {
 
     public String getAddress() {
         return "/rc";
+    }
+
+    public Count newCount(String anAccumulatorId, long aSamplePeriod, long aCount) {
+        StringBuilder myBuilder = new StringBuilder(_peer.getAddress());
+        myBuilder.append(":");
+        myBuilder.append(_nonceSeq.getAndIncrement());
+
+        return new Count(anAccumulatorId, aSamplePeriod, aCount, myBuilder.toString());
     }
 
     /**
@@ -221,20 +252,20 @@ public class DecayingAccumulators implements Peer.Service {
         String myId = aCount.getAccumulatorId();
 
         while (true) {
-            List<Docket> mySamples = _collectedSamples.get(myId);
+            Set<Docket> mySamples = _collectedSamples.get(myId);
 
             if (mySamples == null) {
-                List<Docket> myInitial = new LinkedList<>();
+                Set<Docket> myInitial = new HashSet<>();
                 myInitial.add(new Docket(aCount));
-                List<Docket> myResult = _collectedSamples.putIfAbsent(myId, Collections.unmodifiableList(myInitial));
+                Set<Docket> myResult = _collectedSamples.putIfAbsent(myId, Collections.unmodifiableSet(myInitial));
 
                 if (myResult == null)
                     break;
             } else {
-                List<Docket> myReplace = new LinkedList<>(mySamples);
+                Set<Docket> myReplace = new HashSet<>(mySamples);
                 myReplace.add(new Docket(aCount));
 
-                if (_collectedSamples.replace(myId, mySamples, Collections.unmodifiableList(myReplace)))
+                if (_collectedSamples.replace(myId, mySamples, Collections.unmodifiableSet(myReplace)))
                     break;
             }
         }
@@ -243,12 +274,12 @@ public class DecayingAccumulators implements Peer.Service {
     }
 
     private Count reduce(String anId) {
-        List<Docket> myDockets = _collectedSamples.get(anId);
+        Set<Docket> myDockets = _collectedSamples.get(anId);
 
         if (myDockets == null)
-            return new Count(anId, _window, 0);
+            return newCount(anId, _window, 0);
         else {
-            List<Docket> myReduced = new LinkedList<>(myDockets);
+            Set<Docket> myReduced = new HashSet<>(myDockets);
 
             long myMinimumAge = System.currentTimeMillis() - _window;
             long myTotal = 0;
@@ -269,10 +300,10 @@ public class DecayingAccumulators implements Peer.Service {
             if (myReduced.size() == 0)
                 _collectedSamples.remove(anId, myDockets);
             else
-                _collectedSamples.replace(anId, myDockets, Collections.unmodifiableList(myReduced));
+                _collectedSamples.replace(anId, myDockets, Collections.unmodifiableSet(myReduced));
 
 
-            return new Count(anId, _window, myTotal);
+            return newCount(anId, _window, myTotal);
         }
     }
 }

@@ -182,10 +182,10 @@ public class LimitTest {
             return _base.get() + _increment.get();
         }
 
-        DecayingAccumulators.Count contribute() {
+        DecayingAccumulators.Count contribute(DecayingAccumulators myAcc) {
             long myTotal = _increment.get();
             _increment.set(0);
-            return new DecayingAccumulators.Count("a", SAMPLE, myTotal);
+            return myAcc.newCount("a", SAMPLE, myTotal);
         }
 
         long update(DecayingAccumulators.Count aCount) {
@@ -198,7 +198,8 @@ public class LimitTest {
     private class Snapshotter extends TimerTask {
         public void run() {
             try {
-                DecayingAccumulators.Count mySample = _total.contribute();
+                DecayingAccumulators myLocal = _accs.getFirst();
+                DecayingAccumulators.Count mySample = _total.contribute(myLocal);
 
                 // Use the local hash ring to identify servers to use
                 //
@@ -219,9 +220,9 @@ public class LimitTest {
                 SortedSet<DecayingAccumulators.Count> myTotals = new TreeSet<>();
 
                 for (String myPeer: myPeers) {
-                    // Use the local peer to send updates out to this peer and siblings
+                    // Use a peer to send updates out to this peer and siblings
                     //
-                    myTotals.add(_accs.getFirst().log(myPeer, mySample));
+                    myTotals.add(myLocal.log(myPeer, mySample));
                 }
 
                 _logger.info("New total: " + myTotals.last());
