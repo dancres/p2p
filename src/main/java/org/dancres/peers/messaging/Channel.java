@@ -12,6 +12,12 @@ import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * A primitive for ordered delivery of messages with a reconciliation mechanism for recovering from loss via
+ * e.g. gossip.
+ *
+ * @param <T>
+ */
 public class Channel<T extends Message> {
     public static final List<Tuple<Long, Long>> NO_DIGEST = ImmutableList.of(new Tuple<>(0L, 0L));
     private static final int DEFAULT_MAX_HISTORY = 200;
@@ -32,18 +38,32 @@ public class Channel<T extends Message> {
         _maxHistory = aMaxHistory;
     }
 
+    /**
+     * @param aListener is the entity that wishes to receive notification of newly available ordered messages
+     */
     public void add(Listener<T> aListener) {
         _listeners.add(aListener);
     }
 
+    /**
+     * @param aListener is the entity that no longer wishes to receive messages
+     * @return is <code>true</code> if the listener was found and removed
+     */
     public boolean remove(Listener<T> aListener) {
         return _listeners.remove(aListener);
     }
 
+    /**
+     * @return the unique id of this channel
+     */
     public String getId() {
         return _id;
     }
 
+    /**
+     * @param aFactory is the factory that this Channel uses to construct the next <code>Message</code> in the sequence
+     * @return the new <code>Message</code>
+     */
     public T newMessage(MessageFactory<T> aFactory) {
         return aFactory.newMsg(_id, _nextSeq.getAndIncrement());
     }
@@ -54,6 +74,10 @@ public class Channel<T extends Message> {
         }
     }
 
+    /**
+     * @param aMessage is the newly received <code>Message</code> to queue and deliver to <code>Listener</code>
+     *                 instances.
+     */
     public void add(final T aMessage) {
         _outstanding.apply(new Syncd.Transformer<ImmutableSortedSet<T>, ImmutableSortedSet<T>>() {
             public Tuple<ImmutableSortedSet<T>, ImmutableSortedSet<T>> apply(ImmutableSortedSet<T> aBefore) {
@@ -112,11 +136,21 @@ public class Channel<T extends Message> {
         archive(myAvailable);
     }
 
+    /**
+     * Deliver a set of <code>Message</code> instances to registered <code>Listener</code>s
+     * @param aMessages is the messages ro deliver
+     */
     private void send(Iterable<T> aMessages) {
         for (Listener<T> myL : _listeners)
             myL.arrived(aMessages);
     }
 
+    /**
+     * Archive a set of <code>Message</code> instances to the history maintaining a size no greater than that
+     * which was specified at construction time.
+     *
+     * @param aMessages the set of messages to archive
+     */
     private void archive(final ImmutableSortedSet<T> aMessages) {
         _history.apply(new Syncd.Transformer<ImmutableSortedSet<T>, ImmutableSortedSet<T>>() {
             public Tuple<ImmutableSortedSet<T>, ImmutableSortedSet<T>> apply(ImmutableSortedSet<T> aBefore) {
@@ -140,10 +174,10 @@ public class Channel<T extends Message> {
     }
 
     /**
-     * Return a list of an initial tuple which is the sequence number of the oldest message we've kept and the highest
-     * we've got and 2-tuple where _1 is the first sequence number we're missing and _2 is the sequence number of
-     * a message we already have that is closest to what we require - 1. If there are no gaps an empty list is
-     * returned.
+     * @return a list of an initial tuple which is the sequence number of the oldest message we've kept and the highest
+     * we've got and further tuples identifying any gaps in our sequence. Each tuple contains the first sequence number
+     * missing and the sequence number of a message we already have that is closest to what we require - 1.
+     * If there are no gaps an empty list is returned.
      */
     public List<Tuple<Long, Long>> digest() {
         LinkedList<Tuple<Long, Long>> myAll = new LinkedList<>();
@@ -153,6 +187,9 @@ public class Channel<T extends Message> {
         return myAll;
     }
 
+    /**
+     * @return all the <code>Message</code> instances in our history and any outstanding we have yet to deliver
+     */
     private LinkedList<T> all() {
         LinkedList<T> myAll = new LinkedList<>(_history.get());
         myAll.addAll(_outstanding.get());
@@ -160,6 +197,10 @@ public class Channel<T extends Message> {
         return myAll;
     }
 
+    /**
+     * @return a list of <code>Tuple</code> identifying the gaps in our currently outstanding as per the contract for
+     * <code>digest</code>.
+     */
     private LinkedList<Tuple<Long, Long>> gaps() {
         LinkedList<Tuple<Long, Long>> myGaps = new LinkedList<>();
         long myFloor = _floor.get();
@@ -179,6 +220,10 @@ public class Channel<T extends Message> {
         return myGaps;
     }
 
+    /**
+     * @return a single member list containing a tuple containing the extent (lowest sequence number in history
+     * and the highest in outstanding) of this <code>Channel</code>'s knowledge.
+     */
     private List<Tuple<Long, Long>> limits() {
         LinkedList<T> myAll = all();
 
@@ -189,9 +234,13 @@ public class Channel<T extends Message> {
     }
 
     /**
-     * Will provide any messages within the range, even if there are gaps in our stream.
-     * Gap list is of the format ((known_range_min, known_range_max), (gap_min, gap_max), (gap_min, gap_max).....)
-     * Passing NO_DIGEST as the gap list (unknown range and no known gaps) causes all messages to be returned.
+     * Return all messages we have that can help satisfy the specified gaps. We do not guarantee to fill a gap
+     * wholly just to contribute what we have.
+     *
+     * @param aGapsList the list of gaps with format ((known_range_min, known_range_max), (gap_min, gap_max),
+     *                  (gap_min, gap_max).....) or NO_DIGEST (unknown range and no known gaps) causes all
+     *                  messages to be returned.
+     * @return the messages we can contribute
      */
     public List<T> fulfil(List<Tuple<Long, Long>> aGapsList) {
         LinkedList<T> myAll = all();
