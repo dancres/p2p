@@ -6,21 +6,21 @@ import org.junit.Assert;
 public class SyncdTest {
     @Test
     public void construct() {
-        Syncd myS = new Syncd(5);
-        Assert.assertEquals(5, myS.get());
+        Syncd<Integer> myS = new Syncd<>(5);
+        Assert.assertEquals(5, myS.get().intValue());
     }
 
     @Test
     public void set() {
-        Syncd myS = new Syncd(5);
+        Syncd<Integer> myS = new Syncd<>(5);
 
         myS.set(25);
-        Assert.assertEquals(25, myS.get());
+        Assert.assertEquals(25, myS.get().intValue());
     }
 
     @Test
     public void transform() {
-        Syncd<Integer> myS = new Syncd(5);
+        Syncd<Integer> myS = new Syncd<>(5);
 
         Integer myResult = myS.transform(new Syncd.Transformer<Integer>() {
             @Override
