@@ -22,9 +22,9 @@ public class SyncdTest {
     public void transform() {
         Syncd<Integer> myS = new Syncd<>(5);
 
-        Integer myResult = myS.transform(new Syncd.Transformer<Integer>() {
+        Integer myResult = myS.apply(new Syncd.Transformer<Integer>() {
             @Override
-            public Integer transform(Integer aBefore) {
+            public Integer apply(Integer aBefore) {
                 return 25;
             }
         });
