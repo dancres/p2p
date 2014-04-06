@@ -30,7 +30,7 @@ import java.util.concurrent.*;
  * <p>A directory service tracks information across all known peers. The information provided is entirely user-defined
  * via attributes. Liveness tests are supported via timestamps, versioning of attributes is encouraged.</p>
  *
- * @todo Add support for dead node elimination
+ * TODO: Add support for dead node elimination
  */
 public class Directory implements Peer.Service {
     public static class Entry {

@@ -7,7 +7,7 @@ import java.net.URI;
 import java.util.Timer;
 
 /**
- * <p></p>SingleProcessPeer is a peer designed to run alone in its own process (e.g. it's a standalone webserver that
+ * <p>SingleProcessPeer is a peer designed to run alone in its own process (e.g. it's a standalone webserver that
  * runs on a particular address).</p>
  *
  * <b>Not currently implemented.</b>
