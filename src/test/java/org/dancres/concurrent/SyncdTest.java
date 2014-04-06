@@ -1,5 +1,6 @@
 package org.dancres.concurrent;
 
+import org.dancres.util.Tuple;
 import org.junit.Test;
 import org.junit.Assert;
 
@@ -22,14 +23,14 @@ public class SyncdTest {
     public void transform() {
         Syncd<Integer> myS = new Syncd<>(5);
 
-        Integer myResult = myS.apply(new Syncd.Transformer<Integer>() {
+        Integer myResult = myS.apply(new Syncd.Transformer<Integer, Integer>() {
             @Override
-            public Integer apply(Integer aBefore) {
-                return 25;
+            public Tuple<Integer, Integer> apply(Integer aBefore) {
+                return new Tuple<>(25, 4);
             }
         });
 
-        Assert.assertEquals(25, myResult.intValue());
+        Assert.assertEquals(4, myResult.intValue());
         Assert.assertEquals(25, myS.get().intValue());
     }
 }

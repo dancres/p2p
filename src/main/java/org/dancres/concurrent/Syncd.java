@@ -1,5 +1,7 @@
 package org.dancres.concurrent;
 
+import org.dancres.util.Tuple;
+
 public class Syncd<T> {
     private T _value;
 
@@ -30,15 +32,16 @@ public class Syncd<T> {
         }
     }
 
-    public T apply(Transformer<T> anFn) {
+    public <U> U apply(Transformer<T, U> anFn) {
         synchronized (this) {
-            _value = anFn.apply(_value);
+            Tuple<T, U> myResult = anFn.apply(_value);
+            _value = myResult.getFirst();
 
-            return _value;
+            return myResult.getSecond();
         }
     }
 
-    public interface Transformer<T> {
-        public T apply(T aBefore);
+    public interface Transformer<T, U> {
+        public Tuple<T, U> apply(T aBefore);
     }
 }
