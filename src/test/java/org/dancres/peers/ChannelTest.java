@@ -40,6 +40,23 @@ public class ChannelTest {
         }
     }
 
+    class ValidatingListener implements Listener<MessageImpl> {
+        private long _count = 0;
+
+        public void arrived(Iterable<MessageImpl> aMessages) {
+            for (MessageImpl myMsg : aMessages) {
+                if (myMsg.getSeq() != _count)
+                    Assert.fail("Out of order message " + _count + " got " + myMsg.getSeq());
+
+                _count++;
+            }
+        }
+
+        public long getCount() {
+            return _count;
+        }
+    }
+
     @Test
     public void canBuildMessage() {
         Channel<MessageImpl> myChannel = new Channel<>("rhubarb");
@@ -181,22 +198,5 @@ public class ChannelTest {
         }
 
         Assert.assertEquals(0, myMembers.size());
-    }
-
-    class ValidatingListener implements Listener<MessageImpl> {
-        private long _count = 0;
-
-        public void arrived(Iterable<MessageImpl> aMessages) {
-            for (MessageImpl myMsg : aMessages) {
-                if (myMsg.getSeq() != _count)
-                    Assert.fail("Out of order message " + _count + " got " + myMsg.getSeq());
-
-                _count++;
-            }
-        }
-
-        public long getCount() {
-            return _count;
-        }
     }
 }
