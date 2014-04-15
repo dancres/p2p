@@ -70,6 +70,22 @@ public class ChannelTest {
     }
 
     @Test
+    public void duplicateReceive() {
+        Channel<MessageImpl> myChannel = new Channel<>("rhubarb");
+        MessageFactory<MessageImpl> myFactory = new MessageFactoryImpl();
+        ValidatingListener myListener = new ValidatingListener();
+        myChannel.add(myListener);
+
+        for (int i = 0; i < 5; i++) {
+            myChannel.add(myChannel.newMessage(myFactory));
+        }
+
+        myChannel.add(new MessageImpl("rhubarb", 3));
+
+        Assert.assertEquals(5, myListener.getCount());
+    }
+
+    @Test
     public void outOfOrderReceive() {
         Channel<MessageImpl> myChannel = new Channel<>("rhubarb");
         MessageFactory<MessageImpl> myFactory = new MessageFactoryImpl();

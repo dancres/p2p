@@ -79,6 +79,12 @@ public class Channel<T extends Message> {
      *                 instances.
      */
     public void add(final T aMessage) {
+        if (aMessage.getSeq() < _floor.get()) {
+            // We've seen it previously, drop it
+            //
+            return;
+        }
+
         _outstanding.apply(new Syncd.Transformer<ImmutableSortedSet<T>, ImmutableSortedSet<T>>() {
             public Tuple<ImmutableSortedSet<T>, ImmutableSortedSet<T>> apply(ImmutableSortedSet<T> aBefore) {
                 ImmutableSortedSet<T> myNewOutstanding =
