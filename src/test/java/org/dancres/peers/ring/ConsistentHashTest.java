@@ -19,7 +19,7 @@ public class ConsistentHashTest {
     private static final Logger _logger = LoggerFactory.getLogger(ConsistentHashTest.class);
 
     @Test
-    public void testListenerReject() throws Exception {
+    public void testListener() throws Exception {
         HttpServer myServer = new HttpServer(new InetSocketAddress("localhost", 8081));
         AsyncHttpClient myClient = new AsyncHttpClient();
 
@@ -51,12 +51,14 @@ public class ConsistentHashTest {
 
         AtomicInteger myPeer1RejectCount = new AtomicInteger(0);
         AtomicInteger myPeer2RejectCount = new AtomicInteger(0);
+        AtomicInteger myPeer1ChangeCount = new AtomicInteger(0);
+        AtomicInteger myPeer2ChangeCount = new AtomicInteger(0);
 
         ConsistentHash<Integer> myRing1 = ConsistentHash.createRing(myPeer1);
         ConsistentHash<Integer> myRing2 = ConsistentHash.createRing(myPeer2);
 
-        myRing1.add(new RejectionCountingListenerImpl(myPeer1RejectCount));
-        myRing2.add(new RejectionCountingListenerImpl(myPeer2RejectCount));
+        myRing1.add(new RejectionCountingListenerImpl(myPeer1RejectCount, myPeer1ChangeCount));
+        myRing2.add(new RejectionCountingListenerImpl(myPeer2RejectCount, myPeer2ChangeCount));
 
         myRing1.createPosition(1);
 
@@ -80,6 +82,13 @@ public class ConsistentHashTest {
         myBarrier1.await(myBarrier1.current());
         myBarrier2.await(myBarrier2.current());
 
+        /*
+         * Peer1 will see two changes from Peer2, an initial publishing round and then a withdrawal round
+         * Peer2 will see one set of changes from Peer1, it's initial publishing round
+         */
+        Assert.assertEquals(2, myPeer1ChangeCount.get());
+        Assert.assertEquals(1, myPeer2ChangeCount.get());
+
         myPeer1Dir.walk(new LoggerWriter(_logger));
         myPeer2Dir.walk(new LoggerWriter(_logger));
 
@@ -100,14 +109,14 @@ public class ConsistentHashTest {
 
     class RejectionCountingListenerImpl implements ConsistentHash.Listener {
         private AtomicInteger _count;
+        private AtomicInteger _changeCount;
 
-        RejectionCountingListenerImpl(AtomicInteger aCount) {
+        RejectionCountingListenerImpl(AtomicInteger aCount, AtomicInteger aChangeCount) {
             _count = aCount;
+            _changeCount = aChangeCount;
         }
 
-        public void newNeighbour(ConsistentHash aRing, RingPosition anOwnedPosition,
-                                 RingPosition aNeighbourPosition) {
-        }
+        public void changed(RingSnapshot aSnapshot) { _changeCount.incrementAndGet(); }
 
         public void rejected(ConsistentHash aRing, RingPosition anOwnedPosition) {
             _count.incrementAndGet();

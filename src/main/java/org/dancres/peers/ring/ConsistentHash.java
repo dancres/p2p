@@ -46,7 +46,8 @@ public class ConsistentHash<T extends Comparable> {
     }
 
     public interface Listener<T extends Comparable> {
-        public void rejected(ConsistentHash aRing, RingPosition anOwnedPosition);
+        public void changed(RingSnapshot<T> aSnapshot);
+        public void rejected(ConsistentHash<T> aRing, RingPosition anOwnedPosition);
     }
 
     private final Peer _peer;
@@ -193,12 +194,33 @@ public class ConsistentHash<T extends Comparable> {
                 }
             }
 
+            // For dead peers, remove their positions
+            //
+            for (Directory.Entry aDeadEntry : Iterables.filter(aDeadPeers, new Predicate<Directory.Entry>() {
+                public boolean apply(Directory.Entry entry) {
+                    return entry.getAttributes().containsKey(_ringName);
+                }
+            })) {
+                RingPositions<T> myPeerPositions = _packager.extractRingPositions(aDeadEntry);
+
+                _logger.debug("Dead positions from: " + aDeadEntry.getPeerName(), myPeerPositions);
+
+                _ringPositions.remove(aDeadEntry.getPeerName());
+                haveUpdates = true;
+            }
+
             if (!haveUpdates)
                 return;
 
             // Now recompute the positions on the ring
             //
             RingSnapshot<T> myRingSnapshot = new RingSnapshot<>(_ringPositions, _peer);
+
+            // Signal a general change
+            //
+            for (Listener<T> anL : _listeners) {
+                anL.changed(myRingSnapshot);
+            }
 
             // Clear out the rejections and signal them to listeners
             //

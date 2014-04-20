@@ -1,10 +1,8 @@
 package org.dancres.peers.ring;
 
 public class StabiliserImpl implements ConsistentHash.Listener {
-    public void newNeighbour(ConsistentHash aRing, RingPosition anOwnedPosition,
-                             RingPosition aNeighbourPosition) {
-        // Doesn't matter
-    }
+
+    public void changed(RingSnapshot aSnapshot) {}
 
     public void rejected(ConsistentHash aRing, RingPosition anOwnedPosition) {
         try {
