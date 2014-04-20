@@ -153,11 +153,11 @@ public class RingSnapshot<T extends Comparable> implements Iterable<RingPosition
         return Iterables.cycle(Collections.unmodifiableList(myReverse)).iterator();
     }
 
-    class NeighboursSnapshot<T extends Comparable> {
-        final HashSet<NeighbourRelation<T>> _neighbours;
-        final Set<NeighbourRelation<T>> _changes;
+    class NeighboursSnapshot<Z extends Comparable> {
+        final HashSet<NeighbourRelation<Z>> _neighbours;
+        final Set<NeighbourRelation<Z>> _changes;
 
-        NeighboursSnapshot(HashSet<NeighbourRelation<T>> aNeighbours, Set<NeighbourRelation<T>> aChanges) {
+        NeighboursSnapshot(HashSet<NeighbourRelation<Z>> aNeighbours, Set<NeighbourRelation<Z>> aChanges) {
             _neighbours = aNeighbours;
             _changes = aChanges;
         }
@@ -169,13 +169,13 @@ public class RingSnapshot<T extends Comparable> implements Iterable<RingPosition
      * @param anOldNeighbours
      */
     NeighboursSnapshot<T> computeNeighbours(HashSet<NeighbourRelation<T>> anOldNeighbours) {
-        HashSet<NeighbourRelation> myNeighbours = new HashSet<>();
+        HashSet<NeighbourRelation<T>> myNeighbours = new HashSet<>();
         SortedSet<RingPosition<T>> myRing = new TreeSet<>(_newRing.values());
-        RingPosition myLast = myRing.last();
+        RingPosition<T> myLast = myRing.last();
 
-        for (RingPosition myPosn : myRing) {
+        for (RingPosition<T> myPosn : myRing) {
             if (myPosn.isLocal(_peer) && (! myPosn.equals(myLast))) {
-                myNeighbours.add(new NeighbourRelation(myLast, myPosn));
+                myNeighbours.add(new NeighbourRelation<T>(myLast, myPosn));
             }
 
             myLast = myPosn;
@@ -191,7 +191,7 @@ public class RingSnapshot<T extends Comparable> implements Iterable<RingPosition
          * JVM Workaround - if this result is not wrapped in a new hashset, the clearAll/addAll in
          * DirectoryListenerImpl.update will cause the changes set to be empty!
          */
-        Set<NeighbourRelation> myChanges = Sets.difference(myNeighbours, anOldNeighbours);
+        Set<NeighbourRelation<T>> myChanges = Sets.difference(myNeighbours, anOldNeighbours);
 
         _logger.debug("Neighbour diff: " + myChanges + " " + myChanges.equals(myNeighbours) + " " +
                 myChanges.equals(anOldNeighbours));
@@ -199,29 +199,29 @@ public class RingSnapshot<T extends Comparable> implements Iterable<RingPosition
         // JVM workaround for clear and addAll
         // return new NeighboursRebuild(myNeighbours, new HashSet<NeighbourRelation>(myChanges));
 
-        return new NeighboursSnapshot(myNeighbours, myChanges);
+        return new NeighboursSnapshot<T>(myNeighbours, myChanges);
     }
 
-    class NeighbourRelation<T extends Comparable> {
-        private final RingPosition<T> _neighbour;
-        private final RingPosition<T> _owned;
+    class NeighbourRelation<Z extends Comparable> {
+        private final RingPosition<Z> _neighbour;
+        private final RingPosition<Z> _owned;
 
-        NeighbourRelation(RingPosition<T> aNeighbour, RingPosition<T> aLocal) {
+        NeighbourRelation(RingPosition<Z> aNeighbour, RingPosition<Z> aLocal) {
             _neighbour = aNeighbour;
             _owned = aLocal;
         }
 
-        public RingPosition<T> getNeighbour() {
+        public RingPosition<Z> getNeighbour() {
             return _neighbour;
         }
 
-        public RingPosition<T> getOwned() {
+        public RingPosition<Z> getOwned() {
             return _owned;
         }
 
         public boolean equals(Object anObject) {
             if (anObject instanceof NeighbourRelation) {
-                NeighbourRelation myOther = (NeighbourRelation<T>) anObject;
+                NeighbourRelation<Z> myOther = (NeighbourRelation<Z>) anObject;
 
                 return ((_neighbour.equals(myOther._neighbour)) & (_owned.equals(myOther._owned)));
             }
