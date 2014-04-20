@@ -1,7 +1,6 @@
 package org.dancres.peers.ring;
 
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
 import org.dancres.peers.Peer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
