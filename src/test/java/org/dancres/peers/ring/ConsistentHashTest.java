@@ -246,8 +246,8 @@ public class ConsistentHashTest {
 
         for (RingPosition<Integer> myPosn : myRing1.getRing()) {
             _logger.debug("ComparingFwd " + myPrevPosn + " with " + myPosn.getPosition() + " = " +
-                myPrevPosn.compareTo(myPosn.getPosition()) + " so " +
-                                (myPrevPosn.compareTo(myPosn.getPosition()) <= 0));
+                    myPrevPosn.compareTo(myPosn.getPosition()) + " so " +
+                    (myPrevPosn.compareTo(myPosn.getPosition()) <= 0));
 
             Assert.assertTrue((myPrevPosn.compareTo(myPosn.getPosition()) <= 0));
 
@@ -285,6 +285,20 @@ public class ConsistentHashTest {
             if (myTotal > 11)
                 break;
         }
+
+        Set<RingPosition<Integer>> myNeighbours =
+                new HashSet<>(Neighbours.getLowerNeighbours(myRing1,
+                        myRing1.getRing().iterator().next(), 2));
+
+        Assert.assertEquals(2, myNeighbours.size());
+        Assert.assertFalse(myNeighbours.contains(myRing1.getRing().iterator().next()));
+
+        myNeighbours =
+                new HashSet<>(Neighbours.getUpperNeighbours(myRing1,
+                        myRing1.getRing().reverseIterator().next(), 2));
+
+        Assert.assertEquals(2, myNeighbours.size());
+        Assert.assertFalse(myNeighbours.contains(myRing1.getRing().reverseIterator().next()));
 
         myPeer1.stop();
         myPeer2.stop();
