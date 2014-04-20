@@ -46,8 +46,6 @@ public class ConsistentHash<T extends Comparable> {
     }
 
     public interface Listener<T extends Comparable> {
-        public void newNeighbour(ConsistentHash<T> aRing, RingPosition<T> anOwnedPosition,
-                                 RingPosition<T> aNeighbourPosition);
         public void rejected(ConsistentHash aRing, RingPosition anOwnedPosition);
     }
 
@@ -58,12 +56,6 @@ public class ConsistentHash<T extends Comparable> {
      * The positions held by each node identified by address
      */
     private final ConcurrentMap<String, RingPositions<T>> _ringPositions = new ConcurrentHashMap<>();
-
-    /**
-     * The neighbour relations - which positions are closest whilst still less than our own
-     */
-    private final AtomicReference<HashSet<RingSnapshot<T>.NeighbourRelation<T>>> _neighbours =
-            new AtomicReference<>(new HashSet<RingSnapshot<T>.NeighbourRelation<T>>());
 
     private final Packager<T> _packager;
     private final PositionGenerator<T> _positionGenerator;
@@ -201,7 +193,7 @@ public class ConsistentHash<T extends Comparable> {
                 }
             }
 
-            if (! haveUpdates)
+            if (!haveUpdates)
                 return;
 
             // Now recompute the positions on the ring
@@ -210,7 +202,7 @@ public class ConsistentHash<T extends Comparable> {
 
             // Clear out the rejections and signal them to listeners
             //
-            if (! myRingSnapshot._rejected.isEmpty()) {
+            if (!myRingSnapshot._rejected.isEmpty()) {
                 RingPositions<T> myOldPosns = _ringPositions.get(_peer.getAddress());
                 _ringPositions.replace(_peer.getAddress(), myOldPosns, myOldPosns.remove(myRingSnapshot._rejected));
 
@@ -259,16 +251,6 @@ public class ConsistentHash<T extends Comparable> {
             _logger.debug(Thread.currentThread() + " " + this + " Neighbours after 2: " + _neighbours +
                     " " + System.identityHashCode(_neighbours));
              */
-
-            RingSnapshot<T>.NeighboursSnapshot<T> myNeighbourRebuild =
-                    myRingSnapshot.computeNeighbours(_neighbours.get());
-
-            _neighbours.set(myNeighbourRebuild._neighbours);
-
-            if (! myNeighbourRebuild._changes.isEmpty())
-                for (Listener<T> myL : _listeners)
-                    for (RingSnapshot.NeighbourRelation myChange : myNeighbourRebuild._changes)
-                        myL.newNeighbour(ConsistentHash.this, myChange.getOwned(), myChange.getNeighbour());
         }
     }
 
@@ -289,13 +271,6 @@ public class ConsistentHash<T extends Comparable> {
                 myOccupiedPositions.add(myRP.getPosition());
 
         return myOccupiedPositions;
-    }
-
-    /**
-     * @return the neighbours for each of this peer's positions.
-     */
-    public Set<RingSnapshot<T>.NeighbourRelation<T>> getNeighbours() {
-        return Collections.unmodifiableSet(_neighbours.get());
     }
 
     public RingSnapshot<T> getRing() {

@@ -115,114 +115,6 @@ public class ConsistentHashTest {
     }
 
     @Test
-    public void testListenerNeighbour() throws Exception {
-        HttpServer myServer = new HttpServer(new InetSocketAddress("localhost", 8082));
-        AsyncHttpClient myClient = new AsyncHttpClient();
-
-        Peer myPeer1 = new InProcessPeer(myServer, myClient, "/peer1", new Timer());
-        Peer myPeer2 = new InProcessPeer(myServer, myClient, "/peer2", new Timer());
-
-        Set<URI> myPeers = new HashSet<>();
-        myPeers.add(myPeer1.getURI());
-        myPeers.add(myPeer2.getURI());
-
-        PeerSet myPeerSet = new StaticPeerSet(myPeers);
-
-        Directory myPeer1Dir = new Directory(myPeer1, myPeerSet, 500, 3000);
-        Directory myPeer2Dir = new Directory(myPeer2, myPeerSet, 500, 3000);
-
-        GossipBarrier myBarrier1 = new GossipBarrier(myPeer1Dir);
-        GossipBarrier myBarrier2 = new GossipBarrier(myPeer2Dir);
-
-        int myBarr1Curr = myBarrier1.current();
-        int myBarr2Curr = myBarrier2.current();
-
-        myPeer1Dir.start();
-
-        myBarrier1.await(myBarr1Curr);
-        myBarrier2.await(myBarr2Curr);
-
-        myPeer1Dir.walk(new LoggerWriter(_logger));
-        myPeer2Dir.walk(new LoggerWriter(_logger));
-
-        Assert.assertEquals(2, myPeer1Dir.getDirectory().size());
-        Assert.assertEquals(2, myPeer2Dir.getDirectory().size());
-
-        ConsistentHash<Integer> myRing1 = ConsistentHash.createRing(myPeer1);
-        ConsistentHash<Integer> myRing2 = ConsistentHash.createRing(myPeer2);
-
-        AtomicInteger myPeer1NeighbourCount = new AtomicInteger(0);
-        AtomicInteger myPeer2NeighbourCount = new AtomicInteger(0);
-
-        myRing1.add(new NeighbourCountingListenerImpl(myPeer1NeighbourCount));
-        myRing2.add(new NeighbourCountingListenerImpl(myPeer2NeighbourCount));
-
-        myRing1.createPosition(1);
-        myRing2.createPosition(3);
-
-        // Allow some gossip time so that this ring position has "taken" across the cluster of peers
-        // Have to wait a couple of cycles because neighbour processing might lag a little behind our discovery
-        // events
-        //
-        myBarrier1.await(myBarrier1.current());
-        myBarrier2.await(myBarrier2.current());
-        myBarrier1.await(myBarrier1.current());
-        myBarrier2.await(myBarrier2.current());
-
-        myPeer1Dir.walk(new LoggerWriter(_logger));
-        myPeer2Dir.walk(new LoggerWriter(_logger));
-
-        Assert.assertEquals(1, myPeer1NeighbourCount.get());
-        Assert.assertEquals(1, myPeer2NeighbourCount.get());
-
-        Assert.assertEquals(2, myRing1.getRing().getPositions().size());
-        Assert.assertEquals(2, myRing2.getRing().getPositions().size());
-
-        Set<RingSnapshot<Integer>.NeighbourRelation<Integer>> myRels = myRing1.getNeighbours();
-
-        Assert.assertEquals(1, myRels.size());
-
-        RingSnapshot.NeighbourRelation myRel = myRels.iterator().next();
-
-        // In ring 1, owns position 1, neighbour should be 3
-        //
-        Assert.assertEquals(1, myRel.getOwned().getPosition());
-        Assert.assertEquals(3, myRel.getNeighbour().getPosition());
-
-        myRels = myRing2.getNeighbours();
-
-        Assert.assertEquals(1, myRels.size());
-
-        myRel = myRels.iterator().next();
-
-        // In ring 2, owns position 3, neighbour should be 1
-        //
-        Assert.assertEquals(3, myRel.getOwned().getPosition());
-        Assert.assertEquals(1, myRel.getNeighbour().getPosition());
-
-        myPeer1.stop();
-        myPeer2.stop();
-
-        myServer.terminate();
-    }
-
-    class NeighbourCountingListenerImpl implements ConsistentHash.Listener {
-        private AtomicInteger _count;
-
-        NeighbourCountingListenerImpl(AtomicInteger aCount) {
-            _count = aCount;
-        }
-
-        public void newNeighbour(ConsistentHash aRing, RingPosition anOwnedPosition,
-                                 RingPosition aNeighbourPosition) {
-            _count.incrementAndGet();
-        }
-
-        public void rejected(ConsistentHash aRing, RingPosition anOwnedPosition) {
-        }
-    }
-
-    @Test
     public void testGetsStable() throws Exception {
         HttpServer myServer = new HttpServer(new InetSocketAddress("localhost", 8083));
         AsyncHttpClient myClient = new AsyncHttpClient();
@@ -283,10 +175,7 @@ public class ConsistentHashTest {
         myPeer2Dir.walk(new LoggerWriter(_logger));
 
         Assert.assertEquals(6, myRing1.getRing().getPositions().size());
-        Assert.assertEquals(3, myRing1.getNeighbours().size());
-
         Assert.assertEquals(6, myRing2.getRing().getPositions().size());
-        Assert.assertEquals(3, myRing2.getNeighbours().size());
 
         myPeer1.stop();
         myPeer2.stop();
@@ -525,10 +414,7 @@ public class ConsistentHashTest {
         myPeer2Dir.walk(new LoggerWriter(_logger));
 
         Assert.assertEquals(6, myRing1.getRing().getPositions().size());
-        Assert.assertEquals(3, myRing1.getNeighbours().size());
-
         Assert.assertEquals(6, myRing2.getRing().getPositions().size());
-        Assert.assertEquals(3, myRing2.getNeighbours().size());
 
         myPeer1.stop();
         myPeer2.stop();
@@ -586,10 +472,7 @@ public class ConsistentHashTest {
         }
 
         Assert.assertEquals(6, myRing1.getRing().getPositions().size());
-        Assert.assertEquals(3, myRing1.getNeighbours().size());
-
         Assert.assertEquals(6, myRing2.getRing().getPositions().size());
-        Assert.assertEquals(3, myRing2.getNeighbours().size());
 
         // Ring is stable, we can proceed....
         SortedSet<RingPosition<Integer>> myRing = myRing1.getRing().getPositions();
