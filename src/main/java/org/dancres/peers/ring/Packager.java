@@ -20,7 +20,7 @@ class Packager<T extends Comparable> {
         return _gson.toJson(aPositions);
     }
 
-    RingPositions extractRingPositions(Directory.Entry anEntry) {
+    RingPositions<T> extractRingPositions(Directory.Entry anEntry) {
         return _gson.fromJson(anEntry.getAttributes().get(_ringMembershipKey), RingPositions.class);
     }
 
@@ -55,7 +55,7 @@ class Packager<T extends Comparable> {
                 throws JsonParseException {
             JsonArray myArray = jsonElement.getAsJsonArray();
 
-            return new RingPosition(myArray.get(0).getAsString(), _positionPacker.unpack(myArray.get(1).getAsString()),
+            return new RingPosition<>(myArray.get(0).getAsString(), _positionPacker.unpack(myArray.get(1).getAsString()),
                     myArray.get(2).getAsLong());
         }
     }

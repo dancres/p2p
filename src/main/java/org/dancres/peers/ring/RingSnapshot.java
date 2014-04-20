@@ -69,7 +69,7 @@ public class RingSnapshot<T extends Comparable> implements Iterable<RingPosition
      * @param aHashCode
      * @return
      */
-    public RingPosition allocate(Comparable aHashCode) {
+    public RingPosition<T> allocate(Comparable aHashCode) {
         return allocate(aHashCode, 1).get(0);
     }
 
@@ -81,7 +81,7 @@ public class RingSnapshot<T extends Comparable> implements Iterable<RingPosition
      *
      * @return a list of positions
      */
-    public List<RingPosition> allocate(Comparable aHashCode, int aReplicationCount) {
+    public List<RingPosition<T>> allocate(Comparable aHashCode, int aReplicationCount) {
         TreeSet<RingPosition<T>> myPositions = new TreeSet<>(_newRing.values());
 
         if (myPositions.size() == 0)
@@ -108,14 +108,14 @@ public class RingSnapshot<T extends Comparable> implements Iterable<RingPosition
         throw new RuntimeException("Logical error in code");
     }
 
-    private List<RingPosition> extract(TreeSet<RingPosition<T>> aList, RingPosition<T> aFirst, int aNumber) {
-        LinkedList<RingPosition> myResults = new LinkedList<>();
+    private List<RingPosition<T>> extract(TreeSet<RingPosition<T>> aList, RingPosition<T> aFirst, int aNumber) {
+        LinkedList<RingPosition<T>> myResults = new LinkedList<>();
         int myTotal = 1;
 
         myResults.add(aFirst);
 
         while (myTotal < aNumber) {
-            RingPosition myNext = aList.higher(myResults.getLast());
+            RingPosition<T> myNext = aList.higher(myResults.getLast());
 
             if (myNext == null) {
                 // Wrap
@@ -175,7 +175,7 @@ public class RingSnapshot<T extends Comparable> implements Iterable<RingPosition
 
         for (RingPosition<T> myPosn : myRing) {
             if (myPosn.isLocal(_peer) && (! myPosn.equals(myLast))) {
-                myNeighbours.add(new NeighbourRelation<T>(myLast, myPosn));
+                myNeighbours.add(new NeighbourRelation<>(myLast, myPosn));
             }
 
             myLast = myPosn;
@@ -199,7 +199,7 @@ public class RingSnapshot<T extends Comparable> implements Iterable<RingPosition
         // JVM workaround for clear and addAll
         // return new NeighboursRebuild(myNeighbours, new HashSet<NeighbourRelation>(myChanges));
 
-        return new NeighboursSnapshot<T>(myNeighbours, myChanges);
+        return new NeighboursSnapshot<>(myNeighbours, myChanges);
     }
 
     class NeighbourRelation<Z extends Comparable> {

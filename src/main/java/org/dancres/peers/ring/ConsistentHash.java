@@ -52,7 +52,7 @@ public class ConsistentHash<T extends Comparable> {
     }
 
     private final Peer _peer;
-    private final List<Listener> _listeners = new CopyOnWriteArrayList<>();
+    private final List<Listener<T>> _listeners = new CopyOnWriteArrayList<>();
 
     /**
      * The positions held by each node identified by address
@@ -65,7 +65,7 @@ public class ConsistentHash<T extends Comparable> {
     private final AtomicReference<HashSet<RingSnapshot<T>.NeighbourRelation<T>>> _neighbours =
             new AtomicReference<>(new HashSet<RingSnapshot<T>.NeighbourRelation<T>>());
 
-    private final Packager _packager;
+    private final Packager<T> _packager;
     private final PositionGenerator<T> _positionGenerator;
     private final String _ringName;
 
@@ -93,13 +93,13 @@ public class ConsistentHash<T extends Comparable> {
         _ringName = RING_MEMBERSHIP_BASE + "." + aRingName;
         _peer = aPeer;
         _positionGenerator = aGenerator;
-        _packager = new Packager(aPacker, _ringName);
+        _packager = new Packager<>(aPacker, _ringName);
         Directory myDir = (Directory) aPeer.find(Directory.class);
 
         if (myDir == null)
             throw new RuntimeException("ConsistentHash couldn't locate a Directory service in peer");
 
-        _ringPositions.put(_peer.getAddress(), new RingPositions());
+        _ringPositions.put(_peer.getAddress(), new RingPositions<T>());
 
         myDir.add(new AttrProducerImpl());
         myDir.add(new DirListenerImpl());
@@ -157,7 +157,7 @@ public class ConsistentHash<T extends Comparable> {
                     return entry.getAttributes().containsKey(_ringName);
                 }
             })) {
-                RingPositions myPeerPositions = _packager.extractRingPositions(aNewEntry);
+                RingPositions<T> myPeerPositions = _packager.extractRingPositions(aNewEntry);
 
                 _logger.debug("New positions from new: " + aNewEntry.getPeerName(), myPeerPositions);
 
@@ -177,8 +177,8 @@ public class ConsistentHash<T extends Comparable> {
                     return entry.getAttributes().containsKey(_ringName);
                 }
             })) {
-                RingPositions myPeerPositions = _packager.extractRingPositions(anUpdatedEntry);
-                RingPositions myPrevious = _ringPositions.get(anUpdatedEntry.getPeerName());
+                RingPositions<T> myPeerPositions = _packager.extractRingPositions(anUpdatedEntry);
+                RingPositions<T> myPrevious = _ringPositions.get(anUpdatedEntry.getPeerName());
 
                 // Was the positions list updated?
                 //
@@ -206,16 +206,16 @@ public class ConsistentHash<T extends Comparable> {
 
             // Now recompute the positions on the ring
             //
-            RingSnapshot<T> myRingSnapshot = new RingSnapshot(_ringPositions, _peer);
+            RingSnapshot<T> myRingSnapshot = new RingSnapshot<>(_ringPositions, _peer);
 
             // Clear out the rejections and signal them to listeners
             //
             if (! myRingSnapshot._rejected.isEmpty()) {
-                RingPositions myOldPosns = _ringPositions.get(_peer.getAddress());
+                RingPositions<T> myOldPosns = _ringPositions.get(_peer.getAddress());
                 _ringPositions.replace(_peer.getAddress(), myOldPosns, myOldPosns.remove(myRingSnapshot._rejected));
 
                 for (RingPosition myPosn : myRingSnapshot._rejected) {
-                    for (Listener anL : _listeners) {
+                    for (Listener<T> anL : _listeners) {
                         anL.rejected(ConsistentHash.this, myPosn);
                     }
                 }
@@ -266,14 +266,14 @@ public class ConsistentHash<T extends Comparable> {
             _neighbours.set(myNeighbourRebuild._neighbours);
 
             if (! myNeighbourRebuild._changes.isEmpty())
-                for (Listener myL : _listeners)
+                for (Listener<T> myL : _listeners)
                     for (RingSnapshot.NeighbourRelation myChange : myNeighbourRebuild._changes)
                         myL.newNeighbour(ConsistentHash.this, myChange.getOwned(), myChange.getNeighbour());
         }
     }
 
     private RingPosition insertPosition(RingPosition<T> aPosn) {
-        RingPositions myOldPosns = _ringPositions.get(_peer.getAddress());
+        RingPositions<T> myOldPosns = _ringPositions.get(_peer.getAddress());
         _ringPositions.replace(_peer.getAddress(), myOldPosns, myOldPosns.add(Collections.singletonList(aPosn)));
 
         return aPosn;
@@ -299,7 +299,7 @@ public class ConsistentHash<T extends Comparable> {
     }
 
     public RingSnapshot<T> getRing() {
-        return new RingSnapshot(_ringPositions, _peer);
+        return new RingSnapshot<>(_ringPositions, _peer);
     }
 
     /**
@@ -343,7 +343,7 @@ public class ConsistentHash<T extends Comparable> {
             } while (myOccupiedPositions.contains(myNewPos));
         }
 
-        return insertPosition(new RingPosition(_peer, myNewPos));
+        return insertPosition(new RingPosition<>(_peer, myNewPos));
     }
 
     public void add(Listener aListener) {

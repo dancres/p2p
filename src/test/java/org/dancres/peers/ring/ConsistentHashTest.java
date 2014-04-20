@@ -603,7 +603,7 @@ public class ConsistentHashTest {
             //
             int myHash2 = ((int) myRing.last().getPosition()) - 1;
 
-            Collection<RingPosition> myResults = myRing1.getRing().allocate(myHash1, 3);
+            Collection<RingPosition<Integer>> myResults = myRing1.getRing().allocate(myHash1, 3);
 
             // Test for size and uniqueness
             //
