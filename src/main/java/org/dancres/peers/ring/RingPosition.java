@@ -2,20 +2,20 @@ package org.dancres.peers.ring;
 
 import org.dancres.peers.Peer;
 
-public class RingPosition implements Comparable {
+public class RingPosition<T extends Comparable> implements Comparable<RingPosition<T>> {
     private final String _peerName;
-    private final Comparable _position;
+    private final T _position;
     private final long _birthDate;
 
-    RingPosition(Peer aPeer, Comparable aPosition) {
+    RingPosition(Peer aPeer, T aPosition) {
         this(aPeer, aPosition, System.currentTimeMillis());
     }
 
-    RingPosition(Peer aPeer, Comparable aPosition, long aBirthDate) {
+    RingPosition(Peer aPeer, T aPosition, long aBirthDate) {
         this(aPeer.getAddress(), aPosition, aBirthDate);
     }
 
-    RingPosition(String aPeerAddr, Comparable aPosition, long aBirthDate) {
+    RingPosition(String aPeerAddr, T aPosition, long aBirthDate) {
         if (aPosition == null)
             throw new IllegalArgumentException();
 
@@ -24,7 +24,7 @@ public class RingPosition implements Comparable {
         _birthDate = aBirthDate;
     }
 
-    public Comparable getPosition() {
+    public T getPosition() {
         return _position;
     }
 
@@ -44,10 +44,9 @@ public class RingPosition implements Comparable {
         return _peerName.equals(aPeer.getAddress());
     }
 
-    public int compareTo(Object anObject) {
-        RingPosition myOther = (RingPosition) anObject;
+    public int compareTo(RingPosition<T> anOther) {
 
-        return (_position.compareTo(myOther._position));
+        return (_position.compareTo(anOther._position));
     }
 
     public int hashCode() {
@@ -59,10 +58,10 @@ public class RingPosition implements Comparable {
 
     public boolean equals(Object anObject) {
         if (anObject instanceof RingPosition) {
-            RingPosition myOther = (RingPosition) anObject;
+            RingPosition myOther = (RingPosition<T>) anObject;
 
             if (_peerName.equals(myOther._peerName))
-                return (compareTo(anObject) == 0);
+                return (compareTo(myOther) == 0);
         }
 
         return false;

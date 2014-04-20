@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
  * <p><b>Note:</b> This implementation is dependent upon a <code>Directory</code> service having been instantiated on
  * the peer previously.</p>
  */
-public class ConsistentHash {
+public class ConsistentHash<T extends Comparable> {
     private static final String RING_MEMBERSHIP_BASE = "org.dancres.peers.ring.consistentHash.ringMembership";
 
     private static final Logger _logger = LoggerFactory.getLogger(ConsistentHash.class);
@@ -33,20 +33,21 @@ public class ConsistentHash {
      * Responsible for creating candidate positions on a ring, collision detection is done in the hash ring
      * implementation.
      */
-    public static interface PositionGenerator {
-        public Comparable newId();
+    public interface PositionGenerator<T> {
+        public T newId();
     }
 
     /**
      * Responsible for marshalling and unmarshalling positions produced by an associated generator.
      */
-    public static interface PositionPacker {
-        public Comparable unpack(String aPacked);
-        public String pack(Comparable anId);
+    public interface PositionPacker<T> {
+        public T unpack(String aPacked);
+        public String pack(T anId);
     }
 
-    public static interface Listener {
-        public void newNeighbour(ConsistentHash aRing, RingPosition anOwnedPosition, RingPosition aNeighbourPosition);
+    public interface Listener<T extends Comparable> {
+        public void newNeighbour(ConsistentHash<T> aRing, RingPosition<T> anOwnedPosition,
+                                 RingPosition<T> aNeighbourPosition);
         public void rejected(ConsistentHash aRing, RingPosition anOwnedPosition);
     }
 
@@ -56,16 +57,16 @@ public class ConsistentHash {
     /**
      * The positions held by each node identified by address
      */
-    private final ConcurrentMap<String, RingPositions> _ringPositions = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, RingPositions<T>> _ringPositions = new ConcurrentHashMap<>();
 
     /**
      * The neighbour relations - which positions are closest whilst still less than our own
      */
-    private final AtomicReference<HashSet<RingSnapshot.NeighbourRelation>> _neighbours =
-            new AtomicReference<>(new HashSet<RingSnapshot.NeighbourRelation>());
+    private final AtomicReference<HashSet<RingSnapshot<T>.NeighbourRelation<T>>> _neighbours =
+            new AtomicReference<>(new HashSet<RingSnapshot<T>.NeighbourRelation<T>>());
 
     private final Packager _packager;
-    private final PositionGenerator _positionGenerator;
+    private final PositionGenerator<T> _positionGenerator;
     private final String _ringName;
 
     /**
@@ -79,7 +80,7 @@ public class ConsistentHash {
      *
      * @throws RuntimeException if there is no <code>Directory</code> service registered on the specified peer
      */
-    public ConsistentHash(Peer aPeer, PositionGenerator aGenerator, PositionPacker aPacker, String aRingName) {
+    public ConsistentHash(Peer aPeer, PositionGenerator<T> aGenerator, PositionPacker<T> aPacker, String aRingName) {
         if (aRingName == null)
             throw new IllegalArgumentException("Name cannot be null");
 
@@ -104,42 +105,30 @@ public class ConsistentHash {
         myDir.add(new DirListenerImpl());
     }
 
-    /**
-     * Create a ring on the specified peer named "DefaultRing" and with positions represented as <code>Integer</code>s
-     *
-     * @param aPeer
-     */
-    public ConsistentHash(Peer aPeer) {
-        this(aPeer, "DefaultRing");
+    public static ConsistentHash<Integer> createRing(Peer aPeer) {
+        return createRing(aPeer, "DefaultRing");
     }
 
-    /**
-     * Create a ring on a peer with a specified name and using positions represented as <code>Integer</code>s
-     *
-     * @param aPeer
-     * @param aRingName
-     */
-    public ConsistentHash(Peer aPeer, String aRingName) {
-        this(aPeer,
-                new PositionGenerator() {
+    public static ConsistentHash<Integer> createRing(Peer aPeer, String aRingName) {
+        return new ConsistentHash<>(aPeer,
+                new PositionGenerator<Integer>() {
                     private Random _rng = new Random();
 
-                    public Comparable newId() {
+                    public Integer newId() {
                         return _rng.nextInt();
                     }
                 },
-
-                new PositionPacker() {
-                    public Comparable unpack(String aPacked) {
+                new PositionPacker<Integer>() {
+                    public Integer unpack(String aPacked) {
                         return Integer.parseInt(aPacked);
                     }
 
-                    public String pack(Comparable anId) {
+                    public String pack(Integer anId) {
                         return anId.toString();
                     }
                 },
-                aRingName
-        );
+                aRingName);
+
     }
 
     private class AttrProducerImpl implements Directory.AttributeProducer {
@@ -217,7 +206,7 @@ public class ConsistentHash {
 
             // Now recompute the positions on the ring
             //
-            RingSnapshot myRingSnapshot = new RingSnapshot(_ringPositions, _peer);
+            RingSnapshot<T> myRingSnapshot = new RingSnapshot(_ringPositions, _peer);
 
             // Clear out the rejections and signal them to listeners
             //
@@ -271,7 +260,7 @@ public class ConsistentHash {
                     " " + System.identityHashCode(_neighbours));
              */
 
-            RingSnapshot.NeighboursSnapshot myNeighbourRebuild =
+            RingSnapshot<T>.NeighboursSnapshot<T> myNeighbourRebuild =
                     myRingSnapshot.computeNeighbours(_neighbours.get());
 
             _neighbours.set(myNeighbourRebuild._neighbours);
@@ -283,20 +272,20 @@ public class ConsistentHash {
         }
     }
 
-    private RingPosition insertPosition(RingPosition aPosn) {
+    private RingPosition insertPosition(RingPosition<T> aPosn) {
         RingPositions myOldPosns = _ringPositions.get(_peer.getAddress());
         _ringPositions.replace(_peer.getAddress(), myOldPosns, myOldPosns.add(Collections.singletonList(aPosn)));
 
         return aPosn;
     }
 
-    private SortedSet<Comparable> flattenPositions() {
+    private SortedSet<T> flattenPositions() {
         // Simply flatten _ringPositions to get a view of current ring, don't care about peers or collision detection
         //
-        TreeSet<Comparable> myOccupiedPositions = new TreeSet<>();
+        TreeSet<T> myOccupiedPositions = new TreeSet<>();
 
-        for (RingPositions myRPs : _ringPositions.values())
-            for (RingPosition myRP : myRPs.getPositions())
+        for (RingPositions<T> myRPs : _ringPositions.values())
+            for (RingPosition<T> myRP : myRPs.getPositions())
                 myOccupiedPositions.add(myRP.getPosition());
 
         return myOccupiedPositions;
@@ -305,11 +294,11 @@ public class ConsistentHash {
     /**
      * @return the neighbours for each of this peer's positions.
      */
-    public Set<RingSnapshot.NeighbourRelation> getNeighbours() {
+    public Set<RingSnapshot<T>.NeighbourRelation<T>> getNeighbours() {
         return Collections.unmodifiableSet(_neighbours.get());
     }
 
-    public RingSnapshot getRing() {
+    public RingSnapshot<T> getRing() {
         return new RingSnapshot(_ringPositions, _peer);
     }
 
@@ -340,10 +329,10 @@ public class ConsistentHash {
      *
      * @throws CollisionException if the specified position is already allocated.
      */
-    public RingPosition createPosition(Comparable aDesiredPosition) throws CollisionException {
-        SortedSet<Comparable> myOccupiedPositions = flattenPositions();
+    public RingPosition createPosition(T aDesiredPosition) throws CollisionException {
+        SortedSet<T> myOccupiedPositions = flattenPositions();
 
-        Comparable myNewPos = aDesiredPosition;
+        T myNewPos = aDesiredPosition;
 
         if (myNewPos != null) {
             if (myOccupiedPositions.contains(myNewPos))

@@ -88,7 +88,7 @@ public class LimitTest {
         // Dirs are up, now consistent hash rings and positions
         //
         for (Peer myPeer : _peers) {
-            ConsistentHash myHash = new ConsistentHash(myPeer);
+            ConsistentHash<Integer> myHash = ConsistentHash.createRing(myPeer);
 
             _hashes.add(myHash);
             myHash.add(new StabiliserImpl());

@@ -1,5 +1,6 @@
 package org.dancres.peers.ring;
 
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import org.dancres.peers.Peer;
 import org.slf4j.Logger;
@@ -11,21 +12,21 @@ import java.util.*;
  * Ring based on the current positions - the result is a new ring and a record
  * of any rejected node positions
  */
-public class RingSnapshot {
+public class RingSnapshot<T extends Comparable> implements Iterable<RingPosition<T>> {
     private static final Logger _logger = LoggerFactory.getLogger(RingSnapshot.class);
 
-    final Map<Comparable, RingPosition> _newRing;
-    final List<RingPosition> _rejected;
+    final Map<T, RingPosition<T>> _newRing;
+    final List<RingPosition<T>> _rejected;
     final Peer _peer;
 
-    RingSnapshot(Map<String, RingPositions> aRingPositions, Peer aPeer) {
+    RingSnapshot(Map<String, RingPositions<T>> aRingPositions, Peer aPeer) {
         _peer = aPeer;
 
-        Map<Comparable, RingPosition> myNewRing = new HashMap<>();
-        List<RingPosition> myLocalRejections = new LinkedList<>();
+        Map<T, RingPosition<T>> myNewRing = new HashMap<>();
+        List<RingPosition<T>> myLocalRejections = new LinkedList<>();
 
-        for (RingPositions myRingPositions : aRingPositions.values()) {
-            for (RingPosition myRingPosn : myRingPositions.getPositions()) {
+        for (RingPositions<T> myRingPositions : aRingPositions.values()) {
+            for (RingPosition<T> myRingPosn : myRingPositions.getPositions()) {
                 RingPosition myConflict = myNewRing.get(myRingPosn.getPosition());
 
                 if (myConflict == null) {
@@ -81,7 +82,7 @@ public class RingSnapshot {
      * @return a list of positions
      */
     public List<RingPosition> allocate(Comparable aHashCode, int aReplicationCount) {
-        TreeSet<RingPosition> myPositions = new TreeSet<>(_newRing.values());
+        TreeSet<RingPosition<T>> myPositions = new TreeSet<>(_newRing.values());
 
         if (myPositions.size() == 0)
             throw new IllegalStateException("Haven't got any positions to allocate to");
@@ -107,7 +108,7 @@ public class RingSnapshot {
         throw new RuntimeException("Logical error in code");
     }
 
-    private List<RingPosition> extract(TreeSet<RingPosition> aList, RingPosition aFirst, int aNumber) {
+    private List<RingPosition> extract(TreeSet<RingPosition<T>> aList, RingPosition<T> aFirst, int aNumber) {
         LinkedList<RingPosition> myResults = new LinkedList<>();
         int myTotal = 1;
 
@@ -133,16 +134,30 @@ public class RingSnapshot {
     /**
      * @return this peer's current view of the ring
      */
-    public SortedSet<RingPosition> getPositions() {
+    public SortedSet<RingPosition<T>> getPositions() {
         return Collections.unmodifiableSortedSet(
                 new TreeSet<>(_newRing.values()));
     }
 
-    class NeighboursSnapshot {
-        final HashSet<NeighbourRelation> _neighbours;
-        final Set<NeighbourRelation> _changes;
+    /**
+     * @return An immutable infinite iteration of all the ring positions in this snapshot
+     */
+    public Iterator<RingPosition<T>> iterator() {
+        return Iterables.cycle(Collections.unmodifiableList(new LinkedList<>(getPositions()))).iterator();
+    }
 
-        NeighboursSnapshot(HashSet<NeighbourRelation> aNeighbours, Set<NeighbourRelation> aChanges) {
+    public Iterator<RingPosition<T>> reverseIterator() {
+        LinkedList<RingPosition<T>> myReverse = new LinkedList<>(getPositions());
+        Collections.reverse(myReverse);
+
+        return Iterables.cycle(Collections.unmodifiableList(myReverse)).iterator();
+    }
+
+    class NeighboursSnapshot<T extends Comparable> {
+        final HashSet<NeighbourRelation<T>> _neighbours;
+        final Set<NeighbourRelation<T>> _changes;
+
+        NeighboursSnapshot(HashSet<NeighbourRelation<T>> aNeighbours, Set<NeighbourRelation<T>> aChanges) {
             _neighbours = aNeighbours;
             _changes = aChanges;
         }
@@ -153,9 +168,9 @@ public class RingSnapshot {
      *
      * @param anOldNeighbours
      */
-    NeighboursSnapshot computeNeighbours(HashSet<NeighbourRelation> anOldNeighbours) {
+    NeighboursSnapshot<T> computeNeighbours(HashSet<NeighbourRelation<T>> anOldNeighbours) {
         HashSet<NeighbourRelation> myNeighbours = new HashSet<>();
-        SortedSet<RingPosition> myRing = new TreeSet<>(_newRing.values());
+        SortedSet<RingPosition<T>> myRing = new TreeSet<>(_newRing.values());
         RingPosition myLast = myRing.last();
 
         for (RingPosition myPosn : myRing) {
@@ -187,26 +202,26 @@ public class RingSnapshot {
         return new NeighboursSnapshot(myNeighbours, myChanges);
     }
 
-    class NeighbourRelation {
-        private final RingPosition _neighbour;
-        private final RingPosition _owned;
+    class NeighbourRelation<T extends Comparable> {
+        private final RingPosition<T> _neighbour;
+        private final RingPosition<T> _owned;
 
-        NeighbourRelation(RingPosition aNeighbour, RingPosition aLocal) {
+        NeighbourRelation(RingPosition<T> aNeighbour, RingPosition<T> aLocal) {
             _neighbour = aNeighbour;
             _owned = aLocal;
         }
 
-        public RingPosition getNeighbour() {
+        public RingPosition<T> getNeighbour() {
             return _neighbour;
         }
 
-        public RingPosition getOwned() {
+        public RingPosition<T> getOwned() {
             return _owned;
         }
 
         public boolean equals(Object anObject) {
             if (anObject instanceof NeighbourRelation) {
-                NeighbourRelation myOther = (NeighbourRelation) anObject;
+                NeighbourRelation myOther = (NeighbourRelation<T>) anObject;
 
                 return ((_neighbour.equals(myOther._neighbour)) & (_owned.equals(myOther._owned)));
             }

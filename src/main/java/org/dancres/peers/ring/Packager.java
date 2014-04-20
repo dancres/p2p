@@ -5,11 +5,11 @@ import org.dancres.peers.Directory;
 
 import java.lang.reflect.Type;
 
-class Packager {
+class Packager<T extends Comparable> {
     private final Gson _gson;
     private final String _ringMembershipKey;
 
-    Packager(ConsistentHash.PositionPacker aPacker, String aRingMembershipKey) {
+    Packager(ConsistentHash.PositionPacker<T> aPacker, String aRingMembershipKey) {
         _gson = new GsonBuilder().registerTypeAdapter(RingPosition.class,
                 new RingPositionSerializer(aPacker)).registerTypeAdapter(RingPosition.class,
                 new RingPositionDeserializer(aPacker)).create();
@@ -24,14 +24,14 @@ class Packager {
         return _gson.fromJson(anEntry.getAttributes().get(_ringMembershipKey), RingPositions.class);
     }
 
-    private static class RingPositionSerializer implements JsonSerializer<RingPosition> {
-        private ConsistentHash.PositionPacker _positionPacker;
+    private  class RingPositionSerializer implements JsonSerializer<RingPosition<T>> {
+        private ConsistentHash.PositionPacker<T> _positionPacker;
 
         RingPositionSerializer(ConsistentHash.PositionPacker aPacker) {
             _positionPacker = aPacker;
         }
 
-        public JsonElement serialize(RingPosition ringPosition, Type type,
+        public JsonElement serialize(RingPosition<T> ringPosition, Type type,
                                      JsonSerializationContext jsonSerializationContext) {
             JsonArray myArray = new JsonArray();
 
@@ -43,10 +43,10 @@ class Packager {
         }
     }
 
-    private static class RingPositionDeserializer implements JsonDeserializer<RingPosition> {
-        private ConsistentHash.PositionPacker _positionPacker;
+    private class RingPositionDeserializer implements JsonDeserializer<RingPosition<T>> {
+        private ConsistentHash.PositionPacker<T> _positionPacker;
 
-        RingPositionDeserializer(ConsistentHash.PositionPacker aPacker) {
+        RingPositionDeserializer(ConsistentHash.PositionPacker<T> aPacker) {
             _positionPacker = aPacker;
         }
 
