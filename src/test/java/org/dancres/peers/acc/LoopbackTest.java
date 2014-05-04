@@ -2,7 +2,7 @@ package org.dancres.peers.acc;
 
 import com.ning.http.client.AsyncHttpClient;
 import org.dancres.peers.Peer;
-import org.dancres.peers.primitives.HttpServer;
+import org.dancres.net.netty.HttpServer;
 import org.dancres.peers.primitives.InProcessPeer;
 import org.junit.Test;
 import org.junit.Assert;

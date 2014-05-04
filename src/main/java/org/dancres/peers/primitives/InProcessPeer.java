@@ -1,6 +1,7 @@
 package org.dancres.peers.primitives;
 
 import com.ning.http.client.AsyncHttpClient;
+import org.dancres.net.netty.HttpServer;
 import org.dancres.peers.Peer;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpResponse;

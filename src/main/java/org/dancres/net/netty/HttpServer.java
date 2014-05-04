@@ -1,4 +1,4 @@
-package org.dancres.peers.primitives;
+package org.dancres.net.netty;
 
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.*;

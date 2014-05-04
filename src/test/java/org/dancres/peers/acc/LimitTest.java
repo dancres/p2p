@@ -5,7 +5,7 @@ import org.dancres.peers.Directory;
 import org.dancres.peers.Peer;
 import org.dancres.peers.PeerSet;
 import org.dancres.peers.primitives.GossipBarrier;
-import org.dancres.peers.primitives.HttpServer;
+import org.dancres.net.netty.HttpServer;
 import org.dancres.peers.primitives.InProcessPeer;
 import org.dancres.peers.primitives.StaticPeerSet;
 import org.dancres.peers.ring.ConsistentHash;

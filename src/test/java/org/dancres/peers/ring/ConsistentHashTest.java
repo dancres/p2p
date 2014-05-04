@@ -1,6 +1,7 @@
 package org.dancres.peers.ring;
 
 import com.ning.http.client.AsyncHttpClient;
+import org.dancres.net.netty.HttpServer;
 import org.dancres.peers.primitives.*;
 import org.junit.Assert;
 import org.dancres.peers.Directory;

@@ -3,7 +3,7 @@ package org.dancres.peers;
 import com.ning.http.client.AsyncHttpClient;
 import org.junit.Assert;
 import org.dancres.peers.primitives.GossipBarrier;
-import org.dancres.peers.primitives.HttpServer;
+import org.dancres.net.netty.HttpServer;
 import org.dancres.peers.primitives.InProcessPeer;
 import org.dancres.peers.primitives.StaticPeerSet;
 import org.junit.Test;
