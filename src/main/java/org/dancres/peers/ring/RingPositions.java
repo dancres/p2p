@@ -29,14 +29,14 @@ class RingPositions<T extends Comparable> {
         HashSet<RingPosition<T>> myPositions = new HashSet<>(_positions);
         myPositions.addAll(aPositions);
 
-        return new RingPositions(_generation + 1, myPositions);
+        return new RingPositions<>(_generation + 1, myPositions);
     }
 
     RingPositions remove(Collection<RingPosition<T>> aPositions) {
         HashSet<RingPosition<T>> myPositions = new HashSet<>(_positions);
         myPositions.removeAll(aPositions);
 
-        return new RingPositions(_generation + 1, myPositions);
+        return new RingPositions<>(_generation + 1, myPositions);
     }
 
     Set<RingPosition<T>> getPositions() {
@@ -49,7 +49,7 @@ class RingPositions<T extends Comparable> {
 
     public boolean equals(Object anObject) {
         if (anObject instanceof RingPositions) {
-            RingPositions myPositions = (RingPositions<T>) anObject;
+            RingPositions<T> myPositions = (RingPositions<T>) anObject;
 
             return ((_generation.equals(myPositions._generation)) &&
                     (Sets.symmetricDifference(_positions, myPositions._positions).size() == 0));
