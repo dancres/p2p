@@ -266,7 +266,7 @@ public class Channel<T extends Message> {
         for (Tuple<Long, Long> myGap : myOthersGaps) {
             // {x | a <= x < b} is closedOpen()
             //
-            final Range mySearchRange = Range.closedOpen(myGap.getFirst(), myGap.getSecond() + 1);
+            final Range<Long> mySearchRange = Range.closedOpen(myGap.getFirst(), myGap.getSecond() + 1);
             Iterables.addAll(myResults, Iterables.filter(myAll,
                     new Predicate<T>() {
                         public boolean apply(T aMessage) {
