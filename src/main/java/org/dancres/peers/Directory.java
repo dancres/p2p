@@ -82,6 +82,7 @@ public class Directory implements Peer.Service {
 
     private static final long DEFAULT_GOSSIP_PERIOD = 5000;
     private static final long DEFAULT_NODE_OVERDUE_TIME = 30000;
+    private static final String MOUNT_POINT = "/directory";
 
     private static final Logger _logger = LoggerFactory.getLogger(Directory.class);
 
@@ -104,7 +105,7 @@ public class Directory implements Peer.Service {
     });
 
     public String getAddress() {
-        return "/directory";
+        return MOUNT_POINT;
     }
 
     public Peer.ServiceDispatcher getDispatcher() {
@@ -288,7 +289,7 @@ public class Directory implements Peer.Service {
 
             try {
                 myClient.preparePost(PeerSets.randomSelect(_peers, _peer.getURI()).toString() +
-                        "/directory").setBody(
+                        MOUNT_POINT).setBody(
                         myGson.toJson(getDirectory())).execute(new AsyncCompletionHandler<Response>() {
 
                     public Response onCompleted(Response aResponse) throws Exception {
