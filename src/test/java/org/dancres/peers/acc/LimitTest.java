@@ -41,7 +41,7 @@ public class LimitTest {
     private static final Logger _logger = LoggerFactory.getLogger(LimitTest.class);
 
     private final LinkedList<Peer> _peers = new LinkedList<>();
-    private final LinkedList<ConsistentHash> _hashes = new LinkedList<>();
+    private final LinkedList<ConsistentHash<Integer>> _hashes = new LinkedList<>();
     private final LinkedList<GossipBarrier> _barriers = new LinkedList<>();
     private final LinkedList<DecayingAccumulators> _accs = new LinkedList<>();
     private final Total _total = new Total(MAX_REQUESTS_PER_PERIOD);
@@ -204,7 +204,7 @@ public class LimitTest {
                 // Use the local hash ring to identify servers to use
                 //
                 Integer myHash = mySample.getAccumulatorId().hashCode();
-                List<RingPosition> myPositions = _hashes.getFirst().getRing().allocate(myHash, 3);
+                List<RingPosition<Integer>> myPositions = _hashes.getFirst().getRing().allocate(myHash, 3);
                 Set<String> myPeers = new HashSet<>();
 
                 // We do nothing to enforce a properly balanced hash ring so could end up with the same
