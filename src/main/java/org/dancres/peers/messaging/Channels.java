@@ -18,6 +18,6 @@ public class Channels {
         Set<String> myNotKnownRemotely = Sets.difference(aLocal, aRemote).immutableCopy();
         Set<String> myNotKnownLocally = Sets.difference(aRemote, aLocal).immutableCopy();
 
-        return new Tuple(myNotKnownLocally, myNotKnownRemotely);
+        return new Tuple<>(myNotKnownLocally, myNotKnownRemotely);
     }
 }
