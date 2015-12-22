@@ -19,7 +19,8 @@ import org.slf4j.LoggerFactory;
  * <p>Each hash ring requires a unique name and there may be several hash rings active on any given peer.</p>
  *
  * <p>Members of a hash ring needn't be servers i.e. maintain a set of positions, they can just be clients that use
- * the hash ring for whatever purpose is intended.</p>
+ * the hash ring for whatever purpose is intended. In such a case, one would construct a ConsistentHashRing but
+ * never invoke <code>createPosition</code></p>
  *
  * <p><b>Note:</b> This implementation is dependent upon a <code>Directory</code> service having been instantiated on
  * the peer previously.</p>

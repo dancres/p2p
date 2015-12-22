@@ -86,6 +86,11 @@ public class LimitTest {
         _logger.info("Hash Rings");
 
         // Dirs are up, now consistent hash rings and positions
+        // We use the consistent hash ring to determine to determine which (remote) instances of DecayingAccumulators
+        // to log counts with. Thus any Peer that isn't a member of this hash ring or at least doesn't maintain
+        // positions, would not be eligible to act as a server. Thus a client is constructed out of a Peer as we've
+        // done here but without creating positions. That client is then invoked upon to find relevant positions and
+        // thus peers for logging counts against after which it is invoked upon to log counts and return totals.
         //
         for (Peer myPeer : _peers) {
             ConsistentHash<Integer> myHash = ConsistentHash.createRing(myPeer);
