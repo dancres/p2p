@@ -145,7 +145,6 @@ public class DecayingAccumulators implements Peer.Service {
     private final ConcurrentHashMap<String, Set<Docket>> _collectedSamples = new ConcurrentHashMap<>();
     private final Peer _peer;
     private final long _window;
-    private final AtomicLong _nonceSeq = new AtomicLong(0);
 
     /**
      * Use this method to setup a client or a server with a default window of 60 seconds on the specified peer.
@@ -188,11 +187,8 @@ public class DecayingAccumulators implements Peer.Service {
      * @return
      */
     public Count newCount(String anAccumulatorId, long aSamplePeriod, long aCount) {
-        StringBuilder myBuilder = new StringBuilder(_peer.getAddress());
-        myBuilder.append(":");
-        myBuilder.append(_nonceSeq.getAndIncrement());
-
-        return new Count(anAccumulatorId, aSamplePeriod, aCount, myBuilder.toString());
+        UUID myNonce = UUID.randomUUID();
+        return new Count(anAccumulatorId, aSamplePeriod, aCount, myNonce.toString());
     }
 
     /**
