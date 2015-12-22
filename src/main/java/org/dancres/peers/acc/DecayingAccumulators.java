@@ -19,12 +19,46 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * <p>A service which maintains a number of independent, uniquely named accumulators.</p>
  *
- * <p>An accumulator provides a total for a set of counts within a rolling time window. Thus counts submitted prior to
- * the window are dropped from the total such that if no samples are received for long enough, the total will
- * decay to zero.</p>
+ * <p>An individual accumulator provides a total for a set of counts within a rolling time window. Thus counts
+ * submitted prior to the window are dropped from the total such that if no samples are received for long enough,
+ * the total will decay to zero.</p>
  */
 public class DecayingAccumulators implements Peer.Service {
     private static final Logger _logger = LoggerFactory.getLogger(DecayingAccumulators.class);
+
+    /**
+     * The protocol for DecayingAccumulators is GET to read a total for an accumulator and POST to add a count to
+     * an accumulator. The protocol isn't RESTful as for the POST, the count id is passed inside of the body
+     * of the post as part of a GSON'd Count instance. The GET passes the id of the desired accumulator as a query
+     * parameter and would require. In both cases, one would prefer to pass the id as part of the URL path.
+     */
+    private class Dispatcher implements Peer.ServiceDispatcher {
+        public void dispatch(String aServicePath, HttpRequest aRequest, HttpResponse aResponse) {
+            if (aRequest.getMethod().equals(HttpMethod.POST)) {
+                String mySampleString = aRequest.getContent().toString(CharsetUtil.UTF_8);
+
+                Gson myGson = new Gson();
+                Count myCount = myGson.fromJson(mySampleString, Count.class);
+
+                Count myAccumulation = add(myCount);
+
+                aResponse.setContent(ChannelBuffers.copiedBuffer(myGson.toJson(myAccumulation), CharsetUtil.UTF_8));
+                aResponse.setStatus(HttpResponseStatus.OK);
+            } else if (aRequest.getMethod().equals(HttpMethod.GET)){
+                String myIdString = new QueryStringDecoder(aRequest.getUri()).getParameters().get("id").get(0);
+
+                Gson myGson = new Gson();
+                String myId = myGson.fromJson(myIdString, String.class);
+
+                Count myAccumulation = reduce(myId);
+
+                aResponse.setContent(ChannelBuffers.copiedBuffer(myGson.toJson(myAccumulation), CharsetUtil.UTF_8));
+                aResponse.setStatus(HttpResponseStatus.OK);
+            } else {
+                aResponse.setStatus(HttpResponseStatus.BAD_REQUEST);
+            }
+        }
+    }
 
     public static class Count implements Comparable<Count> {
         private final String _accumulatorId;
@@ -137,10 +171,22 @@ public class DecayingAccumulators implements Peer.Service {
         _peer.add(this);
     }
 
+    public Peer.ServiceDispatcher getDispatcher() {
+        return _dispatcher;
+    }
+
     public String getAddress() {
         return "/rc";
     }
 
+    /**
+     * Construct a new Count object to be logged with one or more Peers.
+     *
+     * @param anAccumulatorId the id of the accumulator we wish to add a count to
+     * @param aSamplePeriod the period over which the count was taken
+     * @param aCount the count for the period
+     * @return
+     */
     public Count newCount(String anAccumulatorId, long aSamplePeriod, long aCount) {
         StringBuilder myBuilder = new StringBuilder(_peer.getAddress());
         myBuilder.append(":");
@@ -150,7 +196,7 @@ public class DecayingAccumulators implements Peer.Service {
     }
 
     /**
-     * Add a sample to a specified peer.
+     * Log a Count at a specified peer.
      *
      * @param aPeerAddress is the peer maintaining the accumulator
      * @param aCount is the sample to add
@@ -179,11 +225,11 @@ public class DecayingAccumulators implements Peer.Service {
     }
 
     /**
-     * Get the current total of all samples received
+     * Get the current total of all Counts received from the specified peer
      *
      * @param aPeerAddress is the peer maintaining the counter
      * @param anId is the name of the accumulator for which a total is required
-     * @return
+     * @return the current total
      * @throws Exception
      */
     public Count get(String aPeerAddress, String anId) throws Exception {
@@ -205,38 +251,6 @@ public class DecayingAccumulators implements Peer.Service {
         });
 
         return mySample.get();
-    }
-
-    public Peer.ServiceDispatcher getDispatcher() {
-        return _dispatcher;
-    }
-
-    private class Dispatcher implements Peer.ServiceDispatcher {
-        public void dispatch(String aServicePath, HttpRequest aRequest, HttpResponse aResponse) {
-            if (aRequest.getMethod().equals(HttpMethod.POST)) {
-                String mySampleString = aRequest.getContent().toString(CharsetUtil.UTF_8);
-
-                Gson myGson = new Gson();
-                Count myCount = myGson.fromJson(mySampleString, Count.class);
-
-                Count myAccumulation = add(myCount);
-
-                aResponse.setContent(ChannelBuffers.copiedBuffer(myGson.toJson(myAccumulation), CharsetUtil.UTF_8));
-                aResponse.setStatus(HttpResponseStatus.OK);
-            } else if (aRequest.getMethod().equals(HttpMethod.GET)){
-                String myIdString = new QueryStringDecoder(aRequest.getUri()).getParameters().get("id").get(0);
-
-                Gson myGson = new Gson();
-                String myId = myGson.fromJson(myIdString, String.class);
-
-                Count myAccumulation = reduce(myId);
-
-                aResponse.setContent(ChannelBuffers.copiedBuffer(myGson.toJson(myAccumulation), CharsetUtil.UTF_8));
-                aResponse.setStatus(HttpResponseStatus.OK);
-            } else {
-                aResponse.setStatus(HttpResponseStatus.BAD_REQUEST);
-            }
-        }
     }
 
     /*
