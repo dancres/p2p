@@ -195,6 +195,9 @@ public class LimitTest {
         }
     }
 
+    /**
+     * Is run every so often to log collected counts with a consistent hash of DecayingAccumulator servers.
+     */
     private class Snapshotter extends TimerTask {
         public void run() {
             try {
